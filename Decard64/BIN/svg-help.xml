@@ -3,6 +3,7 @@
   <elements>
 	<svg>
 		<documentation>Root XML container.</documentation>
+		<decard-baseline>Added for compatibility with old projects: set to 100% so that the baseline of foreignObject is considered equal to the font-size, in new projects and the default is 80%.</decard-baseline>
 	</svg>
 	<circle>
 		<documentation>Draw circles based on a center point and a radius.</documentation>
@@ -281,7 +282,6 @@
 			<opacity/>
 			<mask/>
 			<text/>
-			<body/>
 			<filter/>
 			<offset/>
 			<stop-opacity/>
@@ -307,6 +307,8 @@
 			<xlink:href/>	
 			<href/>	
 			<points/>	
+			<flood-color/>
+			<flood-opacity/>
 		</Common>
 		<Font>
 			<font-size/>
@@ -320,6 +322,18 @@
 			<word-spacing/>
 			<text-decoration/>
 		</Font>
+		<Color>
+			<fill/>
+			<fill-opacity/>
+			<stroke/>
+			<stroke-opacity/>
+			<stroke-width/>
+			<stop-opacity/>
+			<stop-color/>
+			<flood-color/>
+			<flood-opacity/>
+			<opacity/>
+		</Color>
 	</grouping>
 
 	<exclude>
@@ -346,8 +360,6 @@
 		<color/>
 		<shape-rendering/>
 		<color-interpolation-filters/>
-		<flood-color/>
-		<flood-opacity/>
 		<writing-mode/>
 		<clip/>
 		<overflow/>

@@ -25,7 +25,7 @@ object MainForm: TMainForm
     Top = 0
     Width = 977
     Height = 624
-    ActivePage = tsProject
+    ActivePage = tsDesigner
     Align = alClient
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -1584,7 +1584,7 @@ object MainForm: TMainForm
         ExplicitHeight = 471
       end
       object Splitter2: TSplitter
-        Left = 564
+        Left = 643
         Top = 0
         Width = 5
         Height = 419
@@ -1610,104 +1610,31 @@ object MainForm: TMainForm
         Height = 419
         Align = alLeft
         Caption = 'Template'
+        Constraints.MinWidth = 50
         TabOrder = 0
-        object tbrCellGrid: TToolBar
-          Left = 2
-          Top = 373
-          Width = 276
-          Height = 44
-          Align = alBottom
-          AutoSize = True
-          ButtonHeight = 44
-          ButtonWidth = 35
-          Images = MainData.ilDecard
-          ShowCaptions = True
-          TabOrder = 0
-          Wrapable = False
-          object ToolButton30: TToolButton
-            Left = 0
-            Top = 0
-            Hint = 'File operations'
-            Caption = 'File'
-            ImageIndex = 34
-            MenuItem = File2
-          end
-          object ToolButton1: TToolButton
-            Left = 35
-            Top = 0
-            Width = 8
-            Caption = 'ToolButton1'
-            ImageIndex = 3
-            Style = tbsSeparator
-          end
-          object tbCellEdit: TToolButton
-            Left = 43
-            Top = 0
-            Hint = 'Edit cell'
-            Caption = 'Edit'
-            ImageIndex = 45
-            OnClick = tbCellEditClick
-          end
-          object tbAutoWidth: TToolButton
-            Left = 78
-            Top = 0
-            Hint = 'Auto-width'
-            Caption = 'Width'
-            ImageIndex = 12
-            OnClick = tbAutoWidthClick
-          end
-          object tbFindText: TToolButton
-            Left = 113
-            Top = 0
-            Action = aFind
-          end
-          object ToolButton3: TToolButton
-            Left = 148
-            Top = 0
-            Width = 8
-            Caption = 'ToolButton3'
-            ImageIndex = 3
-            Style = tbsSeparator
-          end
-          object btnPreview: TToolButton
-            Left = 156
-            Top = 0
-            Action = aShow
-            ParentShowHint = False
-            ShowHint = True
-          end
-          object tbRenderPrev: TToolButton
-            Left = 191
-            Top = 0
-            Action = aPrev
-          end
-          object tbRenderNext: TToolButton
-            Left = 226
-            Top = 0
-            Action = aNext
-          end
-        end
         inline SVGFrame: TSvgTreeFrame
           Left = 2
           Top = 15
           Width = 276
           Height = 358
           Align = alClient
-          TabOrder = 1
+          Constraints.MinHeight = 200
+          TabOrder = 0
           ExplicitLeft = 2
           ExplicitTop = 15
           ExplicitWidth = 276
           ExplicitHeight = 358
-          inherited tbrTemplate: TToolBar
-            Width = 276
-            ExplicitWidth = 276
-          end
           inherited treeTemplate: TTreeView
             Width = 276
-            Height = 312
+            Height = 314
             OnChange = SvgTreeFrame1treeTemplateChange
+            OnExit = SVGFrametreeTemplateExit
             ExplicitWidth = 276
-            ExplicitHeight = 312
+            ExplicitHeight = 314
+          end
+          inherited pscrTemplate: TPageScroller
+            Width = 276
+            ExplicitWidth = 276
           end
           inherited pmFileSVG: TPopupMenu
             inherited File1: TMenuItem
@@ -1720,55 +1647,141 @@ object MainForm: TMainForm
             end
           end
         end
+        object pscrCellGrid: TPageScroller
+          Left = 2
+          Top = 373
+          Width = 276
+          Height = 44
+          Align = alBottom
+          Control = tbrCellGrid
+          TabOrder = 1
+          object tbrCellGrid: TToolBar
+            Left = 0
+            Top = 0
+            Width = 261
+            Height = 44
+            Align = alNone
+            AutoSize = True
+            ButtonHeight = 44
+            ButtonWidth = 35
+            Images = MainData.ilDecard
+            ShowCaptions = True
+            TabOrder = 0
+            Wrapable = False
+            object ToolButton30: TToolButton
+              Left = 0
+              Top = 0
+              Hint = 'File operations'
+              Caption = 'File'
+              ImageIndex = 34
+              MenuItem = File2
+            end
+            object ToolButton1: TToolButton
+              Left = 35
+              Top = 0
+              Width = 8
+              Caption = 'ToolButton1'
+              ImageIndex = 3
+              Style = tbsSeparator
+            end
+            object tbCellEdit: TToolButton
+              Left = 43
+              Top = 0
+              Hint = 'Edit cell'
+              Caption = 'Edit'
+              ImageIndex = 45
+              OnClick = tbCellEditClick
+            end
+            object tbAutoWidth: TToolButton
+              Left = 78
+              Top = 0
+              Hint = 'Auto-width'
+              Caption = 'Width'
+              ImageIndex = 12
+              OnClick = tbAutoWidthClick
+            end
+            object tbFindText: TToolButton
+              Left = 113
+              Top = 0
+              Action = aFind
+            end
+            object ToolButton3: TToolButton
+              Left = 148
+              Top = 0
+              Width = 8
+              Caption = 'ToolButton3'
+              ImageIndex = 3
+              Style = tbsSeparator
+            end
+            object btnPreview: TToolButton
+              Left = 156
+              Top = 0
+              Action = aShow
+              ParentShowHint = False
+              ShowHint = True
+            end
+            object tbRenderPrev: TToolButton
+              Left = 191
+              Top = 0
+              Action = aPrev
+            end
+            object tbRenderNext: TToolButton
+              Left = 226
+              Top = 0
+              Action = aNext
+            end
+          end
+        end
       end
       inline InspectorFrame: TSvgInspectorFrame
-        Left = 569
+        Left = 648
         Top = 0
-        Width = 400
+        Width = 321
         Height = 419
         Align = alRight
+        Constraints.MinHeight = 200
+        Constraints.MinWidth = 50
         TabOrder = 1
-        ExplicitLeft = 569
-        ExplicitWidth = 400
+        ExplicitLeft = 648
+        ExplicitWidth = 321
         ExplicitHeight = 419
         inherited pcAtrInspector: TPageControl
-          Width = 400
+          Width = 321
           Height = 419
-          ExplicitWidth = 400
+          ExplicitWidth = 321
           ExplicitHeight = 419
           inherited tsAtr: TTabSheet
             AlignWithMargins = True
             ExplicitLeft = 7
             ExplicitTop = 27
-            ExplicitWidth = 386
+            ExplicitWidth = 307
             ExplicitHeight = 385
             inherited splInspector: TSplitter
               Top = 281
-              Width = 386
+              Width = 307
               ExplicitTop = 464
               ExplicitWidth = 392
             end
             inherited sgAttr: TStringGrid
-              Width = 386
+              Width = 307
               Height = 245
-              ExplicitWidth = 386
+              ExplicitWidth = 307
               ExplicitHeight = 245
             end
             inherited meHint: TMemo
               Top = 287
-              Width = 386
+              Width = 307
               ExplicitTop = 287
-              ExplicitWidth = 386
+              ExplicitWidth = 307
             end
-            inherited ToolBar1: TToolBar
-              Width = 386
-              ExplicitWidth = 386
-              inherited cbAtrShow: TComboBox
-                Top = 0
-                ExplicitTop = 0
-              end
-              inherited tbResize: TToolButton
-                OnClick = InspectorFrametbResizeClick
+            inherited pscrInspector: TPageScroller
+              Width = 307
+              ExplicitWidth = 307
+              inherited tbrInspector: TToolBar
+                Width = 280
+                inherited tbResize: TToolButton
+                  OnClick = InspectorFrametbResizeClick
+                end
               end
             end
           end
@@ -1783,57 +1796,59 @@ object MainForm: TMainForm
       object gbPreview: TGroupBox
         Left = 285
         Top = 0
-        Width = 279
+        Width = 358
         Height = 419
         Align = alClient
         Caption = 'Preview'
+        Constraints.MinHeight = 200
+        Constraints.MinWidth = 50
         TabOrder = 2
         object Panel3: TPanel
           Left = 2
           Top = 15
-          Width = 275
-          Height = 45
+          Width = 354
+          Height = 47
           Align = alTop
           AutoSize = True
           BevelOuter = bvNone
           TabOrder = 0
           object Label1: TLabel
-            Left = 8
-            Top = 3
+            Left = 110
+            Top = 4
             Width = 26
             Height = 13
             Caption = 'Zoom'
           end
           object Label2: TLabel
-            Left = 5
+            Left = 110
             Top = 26
             Width = 30
             Height = 13
             Caption = 'Frame'
           end
           object Label4: TLabel
-            Left = 98
-            Top = 3
+            Left = 204
+            Top = 4
             Width = 30
             Height = 13
             Caption = 'X-cells'
           end
           object Label5: TLabel
-            Left = 98
+            Left = 204
             Top = 26
             Width = 30
             Height = 13
             Caption = 'Y-cells'
           end
           object lblCellSize: TLabel
-            Left = 186
+            Left = 292
             Top = 16
             Width = 16
             Height = 13
             Caption = '0:0'
           end
           object cbZoom: TComboBox
-            Left = 39
+            Left = 145
             Top = 0
             Width = 53
             Height = 21
@@ -1849,7 +1864,7 @@ object MainForm: TMainForm
               '200%')
           end
           object seFrame: TSpinEdit
-            Left = 39
+            Left = 145
             Top = 23
             Width = 53
             Height = 22
@@ -1871,8 +1886,8 @@ object MainForm: TMainForm
             OnEnter = seFrameEnter
           end
           object seGridX: TSpinEdit
-            Left = 132
-            Top = 0
+            Left = 238
+            Top = 1
             Width = 48
             Height = 22
             MaxValue = 50
@@ -1884,7 +1899,7 @@ object MainForm: TMainForm
             OnExit = seGridXExit
           end
           object seGridY: TSpinEdit
-            Left = 132
+            Left = 238
             Top = 23
             Width = 48
             Height = 22
@@ -1896,18 +1911,49 @@ object MainForm: TMainForm
             OnClick = seGridXChange
             OnEnter = seGridXEnter
           end
+          object ToolBar1: TToolBar
+            Left = 0
+            Top = 3
+            Width = 99
+            Height = 44
+            Align = alNone
+            AutoSize = True
+            ButtonHeight = 44
+            ButtonWidth = 33
+            Images = MainData.ilDecard
+            ShowCaptions = True
+            TabOrder = 4
+            Wrapable = False
+            object ToolButton10: TToolButton
+              Left = 0
+              Top = 0
+              Action = aShow
+              ParentShowHint = False
+              ShowHint = True
+            end
+            object ToolButton11: TToolButton
+              Left = 33
+              Top = 0
+              Action = aPrev
+            end
+            object ToolButton12: TToolButton
+              Left = 66
+              Top = 0
+              Action = aNext
+            end
+          end
         end
         object scrlPreview: TScrollBox
           Left = 2
-          Top = 60
-          Width = 275
-          Height = 357
+          Top = 62
+          Width = 354
+          Height = 355
           Align = alClient
           TabOrder = 1
           object shpBkg: TShape
             Left = 0
             Top = 0
-            Width = 275
+            Width = 333
             Height = 529
             Align = alClient
             Brush.Color = clSilver
@@ -1915,6 +1961,7 @@ object MainForm: TMainForm
             Pen.Style = psClear
             ExplicitLeft = -21
             ExplicitTop = -194
+            ExplicitWidth = 275
           end
           object imgPreview: TImage
             Left = 0
@@ -1989,6 +2036,7 @@ object MainForm: TMainForm
           Height = 172
           Align = alClient
           ColCount = 2
+          Constraints.MinHeight = 100
           Ctl3D = False
           DefaultColWidth = 120
           DefaultRowHeight = 18
@@ -2023,9 +2071,9 @@ object MainForm: TMainForm
         TabOrder = 0
         ExplicitHeight = 596
         inherited treeTemplate: TTreeView
-          Height = 550
+          Height = 552
           OnChange = ClipartFrametreeTemplateChange
-          ExplicitHeight = 550
+          ExplicitHeight = 552
         end
         inherited pmFileSVG: TPopupMenu
           inherited File1: TMenuItem
@@ -2090,15 +2138,14 @@ object MainForm: TMainForm
               ExplicitTop = 470
               ExplicitWidth = 514
             end
-            inherited ToolBar1: TToolBar
+            inherited pscrInspector: TPageScroller
               Width = 514
               ExplicitWidth = 514
-              inherited cbAtrShow: TComboBox
-                Top = 0
-                ExplicitTop = 0
-              end
-              inherited tbResize: TToolButton
-                Visible = False
+              inherited tbrInspector: TToolBar
+                Width = 280
+                inherited tbResize: TToolButton
+                  Visible = False
+                end
               end
             end
           end
@@ -2212,158 +2259,172 @@ object MainForm: TMainForm
       Caption = 'Preview'
       ImageIndex = 3
       object Splitter5: TSplitter
-        Left = 653
-        Top = 29
-        Height = 567
+        Left = 651
+        Top = 0
+        Width = 5
+        Height = 596
         Align = alRight
-        ExplicitLeft = 448
-        ExplicitTop = 144
-        ExplicitHeight = 100
+        Beveled = True
+        ExplicitLeft = 653
+        ExplicitTop = 29
+        ExplicitHeight = 567
       end
       object pnGridRight: TPanel
         Left = 656
-        Top = 29
+        Top = 0
         Width = 313
-        Height = 567
+        Height = 596
         Align = alRight
         BevelOuter = bvNone
         Ctl3D = True
         ParentCtl3D = False
         TabOrder = 0
       end
-      object scrlPreview1: TScrollBox
-        Left = 0
-        Top = 29
-        Width = 653
-        Height = 567
-        Align = alClient
-        TabOrder = 1
-        object shpPreview: TShape
-          Left = 0
-          Top = 0
-          Width = 649
-          Height = 592
-          Align = alClient
-          Brush.Color = clSilver
-          Brush.Style = bsCross
-          Pen.Style = psClear
-          ExplicitLeft = 200
-          ExplicitTop = 120
-          ExplicitWidth = 65
-          ExplicitHeight = 65
-        end
-        object imgRender: TImage
-          Left = 0
-          Top = 0
-          Width = 649
-          Height = 592
-          Stretch = True
-        end
-      end
-      object ToolBar2: TToolBar
+      object Panel4: TPanel
         Left = 0
         Top = 0
-        Width = 969
-        Height = 29
-        ParentCustomHint = False
-        ButtonHeight = 30
-        ButtonWidth = 31
-        Images = MainData.ilDecard
-        ParentShowHint = False
-        ShowHint = True
-        TabOrder = 2
-        object tbPreviewOpen: TToolButton
+        Width = 651
+        Height = 596
+        Align = alClient
+        BevelOuter = bvNone
+        Caption = 'Panel4'
+        Color = clWindow
+        ParentBackground = False
+        TabOrder = 1
+        object scrlPreview1: TScrollBox
+          Left = 0
+          Top = 29
+          Width = 651
+          Height = 567
+          Align = alClient
+          TabOrder = 0
+          object shpPreview: TShape
+            Left = 0
+            Top = 0
+            Width = 649
+            Height = 592
+            Align = alClient
+            Brush.Color = clSilver
+            Brush.Style = bsCross
+            Pen.Style = psClear
+            ExplicitLeft = 200
+            ExplicitTop = 120
+            ExplicitWidth = 65
+            ExplicitHeight = 65
+          end
+          object imgRender: TImage
+            Left = 0
+            Top = 0
+            Width = 649
+            Height = 592
+            Stretch = True
+          end
+        end
+        object ToolBar2: TToolBar
           Left = 0
           Top = 0
-          Hint = 'Load image'
-          Caption = 'ToolButton2'
-          ImageIndex = 5
-          OnClick = tbPreviewOpenClick
+          Width = 651
+          Height = 29
+          ParentCustomHint = False
+          ButtonHeight = 30
+          ButtonWidth = 31
+          Images = MainData.ilDecard
+          ParentShowHint = False
+          ShowHint = True
+          TabOrder = 1
+          object tbPreviewOpen: TToolButton
+            Left = 0
+            Top = 0
+            Hint = 'Load image'
+            Caption = 'ToolButton2'
+            ImageIndex = 5
+            OnClick = tbPreviewOpenClick
+          end
+          object tbPreviewSave: TToolButton
+            Left = 31
+            Top = 0
+            Hint = 'Save image'
+            Caption = 'tbPreviewSave'
+            ImageIndex = 34
+            OnClick = tbPreviewSaveClick
+          end
+          object tbPreviewRefresh: TToolButton
+            Left = 62
+            Top = 0
+            Hint = 'Renew'
+            Caption = 'tbPreviewRefresh'
+            ImageIndex = 40
+            OnClick = tbPreviewRefreshClick
+          end
+          object ToolButton7: TToolButton
+            Left = 93
+            Top = 0
+            Width = 8
+            Caption = 'ToolButton7'
+            ImageIndex = 41
+            Style = tbsSeparator
+          end
+          object tbRreview100: TToolButton
+            Left = 101
+            Top = 0
+            Hint = 'Real size'
+            AutoSize = True
+            Caption = 'tbRreview100'
+            ImageIndex = 52
+            OnClick = tbRreview100Click
+          end
+          object tbPreview2x: TToolButton
+            Left = 132
+            Top = 0
+            Hint = '2x Zoom'
+            Caption = 'tbPreview2x'
+            ImageIndex = 50
+            OnClick = tbPreview2xClick
+          end
+          object tbPreview05: TToolButton
+            Left = 163
+            Top = 0
+            Hint = '1/2 Zoom'
+            Caption = 'tbPreview05'
+            ImageIndex = 51
+            OnClick = tbPreview05Click
+          end
+          object tbPreviewToScreen: TToolButton
+            Left = 194
+            Top = 0
+            Hint = 'Fit to screen'
+            Caption = 'tbPreviewToScreen'
+            ImageIndex = 54
+            OnClick = tbPreviewToScreenClick
+          end
+          object tbPreviewMM: TToolButton
+            Left = 225
+            Top = 0
+            Hint = 'Real card size'
+            Caption = 'tbPreviewMM'
+            ImageIndex = 53
+            OnClick = tbPreviewMMClick
+          end
         end
-        object tbPreviewSave: TToolButton
-          Left = 31
-          Top = 0
-          Hint = 'Save image'
-          Caption = 'tbPreviewSave'
-          ImageIndex = 34
-          OnClick = tbPreviewSaveClick
+        object Rendering3: TPanel
+          Left = 3
+          Top = 33
+          Width = 217
+          Height = 30
+          Alignment = taLeftJustify
+          BevelOuter = bvNone
+          Caption = 'Rendering...'
+          Color = clWindow
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clHighlight
+          Font.Height = -24
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentBackground = False
+          ParentFont = False
+          TabOrder = 2
+          Visible = False
         end
-        object tbPreviewRefresh: TToolButton
-          Left = 62
-          Top = 0
-          Hint = 'Renew'
-          Caption = 'tbPreviewRefresh'
-          ImageIndex = 40
-          OnClick = tbPreviewRefreshClick
-        end
-        object ToolButton7: TToolButton
-          Left = 93
-          Top = 0
-          Width = 8
-          Caption = 'ToolButton7'
-          ImageIndex = 41
-          Style = tbsSeparator
-        end
-        object tbRreview100: TToolButton
-          Left = 101
-          Top = 0
-          Hint = 'Real size'
-          AutoSize = True
-          Caption = 'tbRreview100'
-          ImageIndex = 52
-          OnClick = tbRreview100Click
-        end
-        object tbPreview2x: TToolButton
-          Left = 132
-          Top = 0
-          Hint = '2x Zoom'
-          Caption = 'tbPreview2x'
-          ImageIndex = 50
-          OnClick = tbPreview2xClick
-        end
-        object tbPreview05: TToolButton
-          Left = 163
-          Top = 0
-          Hint = '1/2 Zoom'
-          Caption = 'tbPreview05'
-          ImageIndex = 51
-          OnClick = tbPreview05Click
-        end
-        object tbPreviewToScreen: TToolButton
-          Left = 194
-          Top = 0
-          Hint = 'Fit to screen'
-          Caption = 'tbPreviewToScreen'
-          ImageIndex = 54
-          OnClick = tbPreviewToScreenClick
-        end
-        object tbPreviewMM: TToolButton
-          Left = 225
-          Top = 0
-          Hint = 'Real card size'
-          Caption = 'tbPreviewMM'
-          ImageIndex = 53
-          OnClick = tbPreviewMMClick
-        end
-      end
-      object Rendering3: TPanel
-        Left = 3
-        Top = 33
-        Width = 217
-        Height = 30
-        Alignment = taLeftJustify
-        BevelOuter = bvNone
-        Caption = 'Rendering...'
-        Color = clWindow
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clHighlight
-        Font.Height = -24
-        Font.Name = 'Tahoma'
-        Font.Style = [fsBold]
-        ParentBackground = False
-        ParentFont = False
-        TabOrder = 3
-        Visible = False
       end
     end
   end
@@ -2412,6 +2473,11 @@ object MainForm: TMainForm
         Caption = 'Create content'
         ImageIndex = 24
         OnClick = Createcontent1Click
+      end
+      object miTableHead: TMenuItem
+        Caption = 'Table header'
+        ImageIndex = 55
+        OnClick = miTableHeadClick
       end
     end
   end

@@ -217,14 +217,14 @@ begin
       for i:=0 to sn.Count-1 do
       if Pos('=', sn[i])>0 then
       begin
-        n:=AnsiUpperCase(Copy(sn[i], 1, Pos('=', sn[i])-1));
+        n:=WideUpperCase(Copy(sn[i], 1, Pos('=', sn[i])-1));
 
 
-//        n:=AnsiUpperCase(sn.Names[i]);
+//        n:=AnsiWideUpperCase(sn.Names[i]);
         if idx.IndexOf(n)=-1 then
         begin
           idx.Add(n);
-          if Pos(n, AnsiUpperCase(s)) >0 then
+          if Pos(n, UpperCase(s)) >0 then
           begin
 //             s := StringReplace(s, n, (sn.Values[n] ,[rfReplaceAll, rfIgnoreCase]);
              s := StringReplace(s, n, copy(sn[i],length(n)+2, Length(sn[i])) ,[rfReplaceAll, rfIgnoreCase]);
@@ -319,6 +319,7 @@ var ss,s,z:string;
 
   end;
 
+
 begin
   nod.Attribute['text-anchor'] := ParentStyle(nod,'text-anchor');
   nod.Attribute['font-size'] := ParentStyle(nod,'font-size');
@@ -328,13 +329,12 @@ begin
   nod.Attribute['letter-spacing'] := ParentStyle(nod,'letter-spacing','0');
   nod.Attribute['font-variant'] := ParentStyle(nod,'normal');
 
-
   Nod.text := StringReplace(Nod.text,'[p]',' [p] ',[rfReplaceAll, rfIgnoreCase]);
   Nod.text := StringReplace(Nod.text,'  ',' ',[rfReplaceAll, rfIgnoreCase]);
 
   if Pos('[U]',UpperCase(Nod.text))>0 then
   begin
-    s := UpperCase(Nod.text);
+    s := WideUpperCase(Nod.text);
     s := StringReplace(s,'&#X','&#x',[rfReplaceAll, rfIgnoreCase]);
     Nod.text := StringReplace(s,'[U]','',[rfReplaceAll, rfIgnoreCase]);
   end;
@@ -346,7 +346,7 @@ begin
   end;
   if ParentStyle(nod,'font-variant')='caps' then
   begin
-    s := UpperCase(Nod.text);
+    s := WideUpperCase(Nod.text);
     s := StringReplace(s,'&#X','&#x',[rfReplaceAll, rfIgnoreCase]);
     Nod.text := s;
   end;
@@ -447,7 +447,7 @@ begin
       else
         r3.Right := 0;
 
-      if LowerCase(sl[i]) = '[p]' then
+      if WideLowerCase(sl[i]) = '[p]' then
       begin
          SzTxt.X := Max(SzTxt.X, SzLine.X);
          SzLine.X := 0;
@@ -466,7 +466,7 @@ begin
       if (i = sl.Count-1)
         or ((SzMax.X = 0) xor (SzMax.Y = 0))
         or ((SzMax.X >= SzLine.X + r2.Right))
-        or (LowerCase(sl[i]) = '[p]')
+        or (WideLowerCase(sl[i]) = '[p]')
         then
       begin
         nod.Nodes.Last.text := nod.Nodes.Last.text + ' ';
@@ -572,6 +572,7 @@ begin
 
    until not DoZoom;
 
+
    if nod.Attribute['decard-format']<>'' then
    begin
 //  valign="top | middle | bottom | baseline"
@@ -608,7 +609,7 @@ begin
   end
   end
   else
-  if Pos('[P]',Uppercase(Nod.text))>0 then
+  if Pos('[P]',UpperCase(Nod.text))>0 then
   begin
      s:= StringReplace(Nod.text,'[p][p]','[p]&#x2007;[p]',[rfReplaceAll,rfIgnoreCase]);
      s := '<tspan>' + StringReplace(s ,'[p]','</tspan><tspan x="'+IntToStr(StrToIntDef(Nod.Attribute['x'] ,0))
@@ -642,7 +643,7 @@ begin
     n1 := nod.Node['rect'];
     Val(n1.Attribute['width'],wdt,z);
     Val(n1.Attribute['height'],hgh,z);
-//    if Pos('[C]',UpperCase(nod.text))=0 then     hgh := 0;
+//    if Pos('[C]',WideUpperCase(nod.text))=0 then     hgh := 0;
     nod.Node['rect'].free;
   end
   else
@@ -686,7 +687,7 @@ begin
     s := StringReplace(s,'[C]','',[rfReplaceAll, rfIgnoreCase]);
     s := StringReplace(s,'[Z]','',[rfReplaceAll, rfIgnoreCase]);
     if Pos('[U]',Nod.text)>0 then
-      s := AnsiUpperCase(s);
+      s := WideUpperCase(s);
     s := StringReplace(s,'[U]','',[rfReplaceAll, rfIgnoreCase]);
     rst := s;
 
@@ -1249,6 +1250,7 @@ bkg := nil;
   nodx:= StrToIntDef(NOD.Attribute['x'],0);
   nody:= StrToIntDef(NOD.Attribute['y'],0);
 
+
   nod.Attribute['x'] := '0';
   nod.Attribute['y'] := '0';
 //  nod_width := StrToIntDef(NOD.Attribute['width'],0);
@@ -1270,6 +1272,7 @@ bkg := nil;
     RST.Attribute['lengthAdjust'] := ParentStyle(NOD, 'lengthAdjust');
     RST.Attribute['letter-spacing'] := ParentStyle(NOD, 'letter-spacing','0');
     RST.Attribute['font-variant'] := ParentStyle(NOD, 'font-variant','normal');
+//    RST.Attribute['stroke-width'] := ParentStyle(NOD, 'stroke-width','0');
 
     XML.ResetXml(RST.xml);
 
@@ -1302,10 +1305,10 @@ bkg := nil;
         if i > j then
         begin
           if ParentStyle(NOD, 'font-variant')='caps' then
-            xn.Add('text').text := StringReplace(UpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
+            xn.Add('text').text := StringReplace(WideUpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
           else
           if ParentStyle(NOD, 'font-variant')='small' then
-            xn.Add('text').text := LowerCase(Copy(s,j,i-j))
+            xn.Add('text').text := WideLowerCase(Copy(s,j,i-j))
           else
             xn.Add('text').text := Copy(s,j,i-j);
           xn.Nodes.Last.Attribute['id']:='txt'+IntToStr(npp);
@@ -1336,6 +1339,7 @@ bkg := nil;
            if xn.LocalName='font' then
            begin
              xn.LocalName:='g';
+
 
              if xn.Attribute['face'] <> '' then
              begin
@@ -1371,10 +1375,10 @@ bkg := nil;
         begin
 
           if ParentStyle(NOD, 'font-variant')='caps' then
-            xn.Add('text').text := StringReplace(UpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
+            xn.Add('text').text := StringReplace(WideUpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
           else
           if ParentStyle(NOD, 'font-variant')='small' then
-            xn.Add('text').text := LowerCase(Copy(s,j,i-j))
+            xn.Add('text').text := WideLowerCase(Copy(s,j,i-j))
           else
             xn.Add('text').text := Copy(s,j,i-j);
           xn.Nodes.Last.Attribute['id']:='txt'+IntToStr(npp);
@@ -1411,7 +1415,7 @@ bkg := nil;
             +' font-weight="'+ ParentStyle(xn,'font-weight')+'"'
             +' font-style="'+ ParentStyle(xn,'font-style')+'"'
             +' letter-spacing="'+ ParentStyle(xn,'letter-spacing','0')+'"'
-            +' text-decoration="'+ ParentStyle(xn,'text-decoration')+'">. '+ (xn.text) +'</text>');
+            +' text-decoration="'+ ParentStyle(xn,'text-decoration')+'">'+(xn.text)+ ' ' + (xn.text) +'</text>');
           zz := zz  + xn.attribute['id']+'Z,';
       end;
       xn := xn.Next
@@ -1498,7 +1502,7 @@ bkg := nil;
 
            w1 := SizeParse(xn.Attribute['id']).Right+SizeParse(xn.Attribute['id']).Left;;
            w2 := SizeParse(xn.Attribute['id']+'Z').Right+SizeParse(xn.Attribute['id']+'Z').Left;
-           w2 := round(w2 + (w2-w1)* WordSpacing);
+           w2 := round(w2 + (w2-2*w1)* WordSpacing);
 
            if {(n1.Attribute['width'] = '0') and} (w1 > (StrToIntDef(RST.Attribute['width'],0)/ZoomValue)) then
               addzoom := min(addzoom,StrToIntDef(RST.Attribute['width'],0)/ZoomValue / w1);
@@ -1520,7 +1524,6 @@ bkg := nil;
            n2.Attribute['font-style'] := ParentStyle(xn, 'font-style');
            n2.Attribute['fill'] := ParentStyle(xn, 'fill');
            n2.Attribute['stroke'] := ParentStyle(xn, 'stroke');
-
            n2.Attribute['stroke-width'] := ParentStyle(xn, 'stroke-width');
 
 
@@ -1543,7 +1546,7 @@ bkg := nil;
            n1.Attribute['width'] := IntToStr(StrToIntDef(n1.Attribute['width'],0) + w5 + w1);
            n1.Attribute['height'] := IntToStr(Max(StrToIntDef(n1.Attribute['height'],0),StrToIntDef(n2.Attribute['height'],0)) );
 
-           w3 := w2-w1;
+           w3 := w2-2*w1;
            w5 := 0;
         end;
 
@@ -1698,9 +1701,9 @@ bkg := nil;
           and (StrToIntDef(NOD.Attribute['height'],0)+1 < hgh * ZoomValue)
         then begin
           err := round(StrToIntDef(NOD.Attribute['height'],0) * ZoomValue);
-
-          ZoomValue := ZoomValue * Sqrt(StrToIntDef(NOD.Attribute['height'],0) / (hgh * ZoomValue) );
-          DoZoom := err = round(StrToIntDef(NOD.Attribute['height'],0) * ZoomValue);
+          ZoomValue := ZoomValue * 0.98;
+//          ZoomValue := ZoomValue * Sqrt(StrToIntDef(NOD.Attribute['height'],0) / (hgh * ZoomValue) );
+          DoZoom := err*100 = round(StrToIntDef(NOD.Attribute['height'],0) * ZoomValue*100);
         end;
 
       end;
@@ -1710,6 +1713,10 @@ bkg := nil;
 
     if (bkg<>nil) and (ZoomValue<>1)and (ZoomValue<>0) then
         Bkg.Attribute['width'] := IntToStr(Round(StrToIntDef(Bkg.Attribute['width'],0)/ZoomValue ));
+
+  if ParentStyle(NOD, 'decard-baseline','80%')<>'100%' then
+    nody:= nody - round(StrToIntDef(NOD.Attribute['font-size'],0)*0.2*ZoomValue);
+
 
     if pos('valign:',nod.Attribute['decard-format'])>0 then
     begin

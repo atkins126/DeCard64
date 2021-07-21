@@ -42,6 +42,10 @@ type
     Load1: TMenuItem;
     Save1: TMenuItem;
     Clear1: TMenuItem;
+    treeTemplate: TTreeView;
+    svgFindDialog: TFindDialog;
+    miPattert: TMenuItem;
+    pscrTemplate: TPageScroller;
     tbrTemplate: TToolBar;
     ToolButton37: TToolButton;
     ToolButton3: TToolButton;
@@ -51,9 +55,7 @@ type
     btnUp: TToolButton;
     btnDown: TToolButton;
     btnSearch1: TToolButton;
-    treeTemplate: TTreeView;
     tbXML: TToolButton;
-    svgFindDialog: TFindDialog;
     procedure treeTemplateCollapsing(Sender: TObject; Node: TTreeNode;
       var AllowCollapse: Boolean);
     procedure tbXMLClick(Sender: TObject);
@@ -87,6 +89,7 @@ type
     procedure miTurbulenceClick(Sender: TObject);
     procedure miOuterCrossClick(Sender: TObject);
     procedure miInnerCrssClick(Sender: TObject);
+    procedure miPattertClick(Sender: TObject);
   private
     { Private declarations }
     FSVG: TXML_Doc;
@@ -313,14 +316,15 @@ begin
    or ((SVGNode.LocalName='radialGradient')and (pos('<stop', AXML)=1))
    or ((SVGNode.LocalName='filter') and (pos('<fe', AXML)=1))
   then begin
-    nod:=SVGNode.Add;
     TreNod := treeTemplate.Items.AddChild(FocusedNode,'');
+    nod:=SVGNode.Add;
   end
   else
   begin
     nod := SVGNode.parent.Add;
     nod.index := SVGNode.index;
     TreNod := treeTemplate.Items.Add(FocusedNode,'');
+    TreNod.MoveTo(FocusedNode,naInsert);
   end;
   nod.ResetXml(AXML);
   ResetSvg(nod, TreNod);
@@ -431,6 +435,13 @@ procedure TSvgTreeFrame.miPasteTagClick(Sender: TObject);
 begin
   if StoredTag<>'' then
     InsertTag(StoredTag);
+end;
+
+procedure TSvgTreeFrame.miPattertClick(Sender: TObject);
+begin
+  InsertTag('<clipPath/>');
+  if @FOnResizeClick<>nil then
+    OnResizeClick(Sender);
 end;
 
 procedure TSvgTreeFrame.miradialGradientClick(Sender: TObject);
@@ -567,7 +578,7 @@ var
    var
      s1,s2:string;
    begin
-     if frMatchCase in svgFindDialog.Options then
+     if (frMatchCase in svgFindDialog.Options) then
      begin
        s1 := svgFindDialog.FindText;
        s2 := txt;

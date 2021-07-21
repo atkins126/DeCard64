@@ -18,17 +18,18 @@ type
     meHint: TMemo;
     tsReplace: TTabSheet;
     ReplaceFrame: TSynEditFrame;
-    ToolBar1: TToolBar;
+    alInspector: TActionList;
+    aEdit: TAction;
+    pscrInspector: TPageScroller;
+    tbrInspector: TToolBar;
     cbAtrShow: TComboBox;
     tbResize: TToolButton;
+    tbEdit: TToolButton;
     ToolButton16: TToolButton;
     tbSetColor: TToolButton;
     tbFont: TToolButton;
     tbFileXlink: TToolButton;
     ToolButton28: TToolButton;
-    tbEdit: TToolButton;
-    alInspector: TActionList;
-    aEdit: TAction;
     procedure sgAttrSelectCell(Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean);
     procedure cbAtrShowClick(Sender: TObject);
@@ -68,7 +69,8 @@ implementation
 
 
 
-uses u_MainData, Vcl.Themes, u_XMLEditForm, u_MainForm, u_ThreadRender;
+uses u_MainData, Vcl.Themes, u_XMLEditForm, u_MainForm, u_ThreadRender,
+  u_Html2SVG ;
 
 
 
@@ -215,7 +217,10 @@ begin
 
    if SVGNode.LocalName='text' then
    begin
-     SVGNode.Attribute['y']:= IntToStr(ARect.Top+(StrToIntDEf(SVGNode.Attribute['font-size'],10)*7) div 8  );
+
+
+     SVGNode.Attribute['y']:= IntToStr(Round(ARect.Top+(StrToIntDEf(SVGNode.Attribute['font-size'],10)*0.8)));
+
      if SVGNode.Attribute['text-anchor']='end' then
         SVGNode.Attribute['x']:= IntToStr(ARect.Right)
      else
@@ -328,6 +333,9 @@ procedure TSvgInspectorFrame.SetSVGNode(const Value: TXML_Nod);
 
     if Aname = 'preserveAspectRatio' then
       en := 'xMidYMid meet,xMinYMid meet,xMaxYMid meet,xMidYMin slice,xMidYMid slice,xMidYMax slice,xMidYMin meet,xMidYMid meet,xMidYMax meet,xMinYMid slice,xMidYMid slice,xMaxYMid slice,none';
+
+    if Aname = 'decard-baseline' then
+      en := '80%,100%';
 
     if nod <> nil then
     begin
@@ -474,6 +482,10 @@ begin
    begin
       AddAtr('body','', SVGNode.LocalName)
    end;
+   if (SVGNode.LocalName='svg') then
+   begin
+      AddAtr('decard-baseline','', SVGNode.LocalName);
+   end;
 
    for i := 1 to sgAttr.RowCount-1 do
    begin
@@ -523,6 +535,7 @@ begin
   begin
     Canvas.Brush.Style := bsClear;
     Canvas.Pen.Color := clBlue;
+    Canvas.Pen.Width := 2;
     Canvas.Rectangle(sgAttr.CellRect(Acol,Arow));
 //    Canvas.Rectangle(Rect.Left-5, Rect.Top, Rect.Right+1, Rect.Bottom);
   end;
@@ -594,6 +607,9 @@ begin
   else
     dkr:='';
 
+  if (SVGNode.LocalName='feFlood')or(sgAttr.Cells[0,sgAttr.Row]='flood-color') then
+    MainData.dlgColor.Color := ColorHex(SVGNode.Attribute[dkr + 'flood-color'])
+  else
   if SVGNode.LocalName='stop' then
     MainData.dlgColor.Color := ColorHex(SVGNode.Attribute[dkr + 'stop-color'])
   else
@@ -605,6 +621,9 @@ begin
 
   if MainData.dlgColor.Execute then
   begin
+    if (SVGNode.LocalName='feFlood')or(sgAttr.Cells[0,sgAttr.Row]='flood-color') then
+      SVGNode.Attribute[dkr + 'flood-color'] := '#'+HexColor(MainData.dlgColor.Color)
+    else
     if  SVGNode.LocalName='stop' then
       SVGNode.Attribute[dkr + 'stop-color'] := '#'+HexColor(MainData.dlgColor.Color)
     else
@@ -692,6 +711,7 @@ function THackStringGrid.CreateEditor: TInplaceEdit;
 begin
   Result := THackInplaceEditList.Create(Self);
   THackInplaceEditList(Result).OnEditButtonClick := OnDblClick;
+  Result.Brush.Color := rgb(200,220,255);
 end;
 
 
@@ -709,7 +729,6 @@ begin
     THackInplaceEditList(InplaceEditor).ReadOnly := (ACol<2) or
       ((Cells[0, ARow]='id')and(ACol<>2)) or
       ((Cells[0, ARow]='body')and(ACol<>3));
-
 end;
 
 { THackInplaceEditList }
