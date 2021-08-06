@@ -48,6 +48,7 @@ type
   private
     FOldText:string;
     FGrid: TStringGrid;
+    FRow: integer;
     function GetText: string;
     procedure SetText(const Value: string);
     procedure SetGrid(const Value: TStringGrid);
@@ -92,8 +93,10 @@ begin
       Grid.Cells[0, Grid.RowCount-1] := IntToStr(Grid.RowCount-1);
     end;
   Grid.Row :=Grid.Row+1;
+{
   if chbScrollPreview.Checked then
      aPreview.Execute
+}
 end;
 
 procedure TCellEditForm.aGridRightExecute(Sender: TObject);
@@ -113,8 +116,10 @@ end;
 procedure TCellEditForm.aGridUpExecute(Sender: TObject);
 begin
   Grid.Row := Grid.Row -1;
+{
   if chbScrollPreview.Checked then
      aPreview.Execute
+}
 end;
 
 procedure TCellEditForm.aGridUpUpdate(Sender: TObject);
@@ -158,17 +163,13 @@ end;
 procedure TCellEditForm.FormCreate(Sender: TObject);
 begin
   btnCancel.OnClick := btnCancelClick;
+  CellEditFrame.FindCaption := ': Edited Text [table cell]'
 end;
 
 function TCellEditForm.GetText: string;
 begin
   Result := StringReplace(CellEditFrame.SynEditor.Text, #13#10,'',[rfReplaceAll]);
   Result := StringReplace(Result, '  ',' ',[rfReplaceAll]) ;
-  Result := StringReplace(Result, '/>','\>',[rfReplaceAll]) ;
-  Result := StringReplace(Result, '</','<\',[rfReplaceAll]) ;
-  Result := StringReplace(Result, '/','&#47;',[rfReplaceAll]) ;
-  Result := StringReplace(Result, '\>','/>',[rfReplaceAll]) ;
-  Result := StringReplace(Result, '<\','</',[rfReplaceAll]) ;
 end;
 
 procedure TCellEditForm.lbCommonDblClick(Sender: TObject);
@@ -180,12 +181,16 @@ begin
   begin
     lbCommon.Items.Delete(lbCommon.ItemIndex);
     lbCommon.Items.Insert(0,s);
+    lbCommon.ItemIndex := 0;
   end;
 
-  if (s = '<br/>')or(s = '<p/>') then
-  s := s + ^M;
+  if (s = '<br/>')or(s = '<p/>')
+    or (copy(s,1,4) = '<br ')or(copy(s,1,3) = '<p ')
+  then
+    s :=  ^M+s;
   CellEditFrame.SynEditor.SelText := s;
   CellEditFrame.SynEditor.SetFocus;
+  SetCursorPos(Mouse.CursorPos.x, lbCommon.ClientToScreen(point(0,10)).y);
 
 end;
 
@@ -238,12 +243,17 @@ procedure TCellEditForm.SetText(const Value: string);
 var s: string;
 begin
   FOldText := Value;
-  s := StringReplace(Value, '<br/>', '<br/>'#13#10,[rfreplaceall]);
+
+  s := StringReplace(Value, '<br/>', #13#10'<br/>',[rfreplaceall]);
+  s := StringReplace(s, '<br ', #13#10'<br ',[rfreplaceall]);
   s := StringReplace(s, '<p/>', #13#10'<p/>',[rfreplaceall]);
+  s := StringReplace(s, '<p ', #13#10'<p ',[rfreplaceall]);
   s := StringReplace(s, '&#47;', '/',[rfreplaceall]);
-  s := StringReplace(s, '[p]', '[p]'#13#10,[rfreplaceall]);
-  s := StringReplace(s, '[P]', '[P]'#13#10,[rfreplaceall]);
   CellEditFrame.SynEditor.Text := s;
+
+  if (FRow <> Grid.Row) and chbScrollPreview.Checked then
+     aPreview.Execute;
+  FRow := Grid.Row;
 end;
 
 end.

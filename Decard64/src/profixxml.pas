@@ -85,6 +85,7 @@ type
     procedure SaveToFile(FileName: string);
     procedure LoadFromStream(Stream:TStream);
     procedure SaveToStream(Stream:TStream);
+    function FindByHRef(Href:string): TXML_Nod;
   end;
 
   TXML_AtrList = class(TList)
@@ -162,6 +163,20 @@ constructor TXML_Doc.Create;
 begin
   inherited create(nil);
   LocalName:='';
+end;
+
+function TXML_Doc.FindByHRef(Href: string): TXML_Nod;
+begin
+  Result := Node['svg'];
+  while Result <>nil do
+  begin
+    if (HRef = '#' + Result.Attribute['id']) or
+       (HRef = 'url(#' + Result.Attribute['id'] + ')')
+    then break;
+
+    Result := Result.Next
+  end;
+
 end;
 
 procedure TXML_Doc.LoadFromFile(FileName: string);
@@ -490,6 +505,7 @@ begin
     text := n.Nodes[0].text;
 
     s := copy(aXml, Pos('<',aXml)+1, 128);
+    Delete(s,Pos('>',s+'>'),128);
     Delete(s,Pos('/',s+'/'),128);
     Delete(s,Pos(' ',s+' '),128);
     LocalName := s;

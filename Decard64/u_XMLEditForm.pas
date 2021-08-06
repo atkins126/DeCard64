@@ -16,13 +16,17 @@ type
     SynEditFrame: TSynEditFrame;
     seTags: TSynMemo;
     splTags: TSplitter;
+    procedure FormCreate(Sender: TObject);
   private
     procedure SetXML(const Value: string);
     function GetXML: string;
+    function GetText: string;
+    procedure SetText(const Value: string);
     { Private declarations }
   public
     { Public declarations }
     property XML:string read GetXML write SetXML;
+    property TEXT:string read GetText write SetText;
   end;
 
 var
@@ -34,10 +38,32 @@ implementation
 
 { TXMLEditForm }
 
+procedure TXMLEditForm.FormCreate(Sender: TObject);
+begin
+  SynEditFrame.FindCaption := ': SVG/XML '
+end;
+
+function TXMLEditForm.GetText: string;
+begin
+  Result := StringReplace(SynEditFrame.SynEditor.Text, #13#10,'',[rfReplaceAll]);
+  Result := StringReplace(Result, '  ',' ',[rfReplaceAll]) ;
+end;
+
 function TXMLEditForm.GetXML: string;
 begin
   result := trim(SynEditFrame.SynEditor.Text);
+end;
 
+procedure TXMLEditForm.SetText(const Value: string);
+var s: string;
+begin
+
+  s := StringReplace(Value, '<br/>', #13#10'<br/>',[rfreplaceall]);
+  s := StringReplace(s, '<br ', #13#10'<br ',[rfreplaceall]);
+  s := StringReplace(s, '<p/>', #13#10'<p/>',[rfreplaceall]);
+  s := StringReplace(s, '<p ', #13#10'<p ',[rfreplaceall]);
+  s := StringReplace(s, '&#47;', '/',[rfreplaceall]);
+  SynEditFrame.SynEditor.Text := s;
 end;
 
 procedure TXMLEditForm.SetXML(const Value: string);

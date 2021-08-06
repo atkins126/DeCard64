@@ -8,7 +8,7 @@ uses
   Vcl.StdCtrls, Vcl.Samples.Spin, Vcl.Buttons, ProfixXML, u_SvgTreeFrame,
   SynEdit, SynEditHighlighter, SynHighlighterXML, Vcl.Grids, Vcl.Menus,
   u_SvgInspectorFrame, System.Math, Vcl.Imaging.jpeg, System.Actions, Vcl.ActnList,
-  Vcl.ColorGrd, System.UITypes, System.Types;
+  Vcl.ColorGrd, System.UITypes, System.Types, SynPdf;
 
 type
   TMainForm = class(TForm)
@@ -209,6 +209,7 @@ type
     tbPreviewMM: TToolButton;
     Rendering3: TPanel;
     miTableHead: TMenuItem;
+    chbTextLayer: TCheckBox;
     procedure sbOpenRootClick(Sender: TObject);
     procedure sbOpenTextClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -300,12 +301,17 @@ type
       WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure SVGFrametreeTemplateExit(Sender: TObject);
     procedure miTableHeadClick(Sender: TObject);
+    procedure sgTextKeyPress(Sender: TObject; var Key: Char);
+    procedure dlgTextFindShow(Sender: TObject);
+    procedure sgTextFixedCellClick(Sender: TObject; ACol, ARow: Integer);
+    procedure ClipartFrameClear1Click(Sender: TObject);
   private
     { Private declarations }
     FSel:TRect;
     FSelCel:TRect;
     NoTempStyle :boolean;
     fBufPreview:boolean;
+    BVL1, BVL2:TPanel;
   public
     { Public declarations }
     SVG:TXML_Doc;
@@ -321,6 +327,8 @@ type
     fProtoFile:string;
     RenderReq:integer;
     FStartRender:TDateTime;
+    GridMouse:boolean;
+
     procedure PrepareAtr(ANod: TXML_Nod);
     procedure ReadGrid(AFilename:string);
     procedure DrawSheet;
@@ -330,6 +338,7 @@ type
     procedure ShowRendering(AFlag:boolean);
     procedure SaveTable(AFileName:string);
     procedure ChildDraw(ANod:TXML_Nod);
+    procedure PDFText(AXML:string; aPDF:TPdfDocument);
   end;
 
 
@@ -350,7 +359,12 @@ implementation
 {$R *.dfm}
 
 uses u_MainData, vcl.FileCtrl, u_XMLEditForm, Vcl.Imaging.pngimage, ShellAPI,
-  u_ThreadRender, System.DateUtils, resvg, u_Html2SVG, u_CellEditForm, SynPdf, u_CalcSVG;
+  u_ThreadRender, System.DateUtils, resvg, u_Html2SVG, u_CellEditForm, u_CalcSVG,
+  System.StrUtils;
+
+type
+  THackGrid=class(TStringGrid);
+  THackBevel=class(TBevel);
 
 function Zero(AEdit: TSpinEdit): integer;
 begin
@@ -567,7 +581,24 @@ end;
 
 procedure TMainForm.aFindExecute(Sender: TObject);
 begin
-  dlgTextFind.Execute()
+  if (aFind.ActionComponent = tbFindText) or (ActiveControl = sgText) then
+    dlgTextFind.Execute()
+  else if (ActiveControl = SVGFrame.treeTemplate) then
+    SVGFrame.btnSearch1Click(Sender)
+  else if (ActiveControl = InspectorFrame.ReplaceFrame.SynEditor) then
+    InspectorFrame.ReplaceFrame.actSearchFind.Execute
+  else if (ActiveControl = ClipartFrame.treeTemplate) then
+    ClipartFrame.btnSearch1Click(Sender);
+
+  aFind.ActionComponent := Nil;
+
+  BVL2.Visible := True;
+//  BVL2.Parent := sgText;
+  BVL2.Top :=0;
+  Winapi.Windows.SetParent(BVL2.handle, dlgTextFind.Handle);
+  BVL1.Visible := True;
+
+
 end;
 
 procedure TMainForm.aNextExecute(Sender: TObject);
@@ -979,7 +1010,7 @@ begin
       inc(n);
       if (n =  seCountX.value * seCountY.value)
         or ((i=sgText.RowCount-1)and (j=cnt))
-        or( chbRange.Checked and (i+1 = seTo.Value) and (j=cnt) ) then
+        or( chbRange.Checked and (i = seTo.Value) and (j=cnt) ) then
       begin
 
 //      XML.Node[1].Attribute['dekart:background']
@@ -1029,7 +1060,11 @@ begin
           if chkJPEG.Checked then
             lPDF.ForceJPEGCompression := StrToIntDef(seForce.Text,0);
 
+          if chbTextLayer.Checked then
+            PDFText(FBufXml.Text, lPDF);
+
           lPDF.CreateOrGetImage(imgRender.Picture.Bitmap, @Box);
+
 
 
 
@@ -1048,6 +1083,9 @@ begin
             Box.Top := 0;
             Box.Width :=lPdf.DefaultPageWidth;
             Box.Height := lPdf.DefaultPageHeight;
+
+            if chbTextLayer.Checked then
+               PDFText(FBufXml.Text, lPDF);
 
             lPDF.CreateOrGetImage(imgRender.Picture.Bitmap, @Box);
           end;
@@ -1334,8 +1372,10 @@ begin
   imgPreview.Width := round(imgPreview.Picture.Width * ZoomFactor) ;
   imgPreview.Height := round(imgPreview.Picture.Height * ZoomFactor);
 
-  PaintBox.Width := round((imgPreview.Picture.Width - seFrame.Value ) * ZoomFactor) ;
-  PaintBox.Height := round((imgPreview.Picture.Height - seFrame.Value) * ZoomFactor);
+//  PaintBox.Width := round((imgPreview.Picture.Width - seFrame.Value ) * ZoomFactor) ;
+//  PaintBox.Height := round((imgPreview.Picture.Height - seFrame.Value) * ZoomFactor);
+  PaintBox.Width := round((imgPreview.Picture.Width  ) * ZoomFactor) ;
+  PaintBox.Height := round((imgPreview.Picture.Height ) * ZoomFactor);
 
   shpSelection.Left :=  imgPreview.Left + Round(FSel.Left * ZoomFactor);
   shpSelection.Top :=  imgPreview.top +  Round(FSel.Top * ZoomFactor);
@@ -1376,29 +1416,25 @@ end;
 procedure TMainForm.ChildDraw(ANod: TXML_Nod);
 var i:integer;
    r:TTetra;
+   Mtr:TMatrix;
+
 begin
   if ANod.LocalName='svg' then exit;
   FontCanvas := PaintBox.Canvas;
 
 
   r:= NodeRect(ANod);
-  for i:=0 to 3 do
-  begin
-    dec(r[i].X, Zero(seFrame));
-    dec(r[i].Y, Zero(seFrame));
-  end;
 
   PaintBox.Canvas.Pen.Color := rgb(0,204,255);
+  PaintBox.Canvas.Pen.Width := 3;
+  PaintBox.Canvas.Brush.Style := bsClear;
+{
   if SVGFrame.treeTemplate.Focused then
   begin
     PaintBox.Canvas.Brush.Style := bsFDiagonal;
     PaintBox.Canvas.Brush.Color := clWhite;
   end
-  else
-  begin
-    PaintBox.Canvas.Brush.Style := bsClear;
-  end;
-
+}
   for i:=0 to 3 do
   begin
     r[i].X := round(r[i].X * ZoomFactor);
@@ -1411,6 +1447,12 @@ begin
   if (ANod.LocalName='g')or(ANod.LocalName='symbol')or(ANod.LocalName='mask')or(ANod.LocalName='clipPath') then
     for i:=0 to ANod.Nodes.Count-1 do
       ChildDraw(ANod.Nodes[i])
+end;
+
+procedure TMainForm.ClipartFrameClear1Click(Sender: TObject);
+begin
+  ClipartFrame.Clear1Click(Sender);
+
 end;
 
 procedure TMainForm.ClipartFrameSave1Click(Sender: TObject);
@@ -1579,6 +1621,8 @@ end;
 procedure TMainForm.dlgTextFindClose(Sender: TObject);
 begin
   Application.MainForm.SetFocus;
+  BVL1.Visible := False;
+  BVL2.Visible := False;
 end;
 
 procedure TMainForm.dlgTextFindFind(Sender: TObject);
@@ -1595,8 +1639,8 @@ var i:integer;
      end
      else
      begin
-       s1 := UpperCase(dlgTextFind.FindText);
-       s2 := UpperCase(txt);
+       s1 := WideUpperCase(dlgTextFind.FindText);
+       s2 := WideUpperCase(txt);
      end;
      if frWholeWord in dlgTextFind.Options then
        result := s1 = s2
@@ -1624,6 +1668,14 @@ begin
     if i >= sgText.ColCount*sgText.RowCount then exit;
     Compare(sgText.Cells[i mod sgText.ColCount, i div sgText.ColCount])
   end;
+end;
+
+procedure TMainForm.dlgTextFindShow(Sender: TObject);
+var
+  Buffer: array[0..255] of Char;
+begin
+  GetWindowText(dlgTextFind.Handle, Buffer, SizeOf(Buffer));
+  SetWindowText(dlgTextFind.Handle, PChar(@Buffer)+': '+lblCfgText.Caption);
 end;
 
 procedure TMainForm.edCfgRootDblClick(Sender: TObject);
@@ -1654,6 +1706,7 @@ begin
   StopFlag := CanClose;
 end;
 
+
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   SVG:=TXML_Doc.Create;
@@ -1673,7 +1726,7 @@ begin
   sgText.col := 1;
   sgText.row := 1;
 
-  edCfgRoot.Text := ExtractFilePath(paramstr(0));
+  edCfgRoot.Text := GetCurrentDir+'\'; //ExtractFilePath(paramstr(0));
   NoTempStyle := true;
 
   pcMain.ActivePage := tsProject;
@@ -1686,6 +1739,32 @@ begin
   FSel.Width:=imgPreview.Picture.Bitmap.Width;
   FSel.Height:=imgPreview.Picture.Bitmap.Height;
   cbZoomChange(nil);
+
+
+  BVL1:=TPanel.Create(Self);
+//  BVL1.ParentColor := False;
+  BVL1.ParentBackground := False;
+  BVL1.Color := clLime;
+  BVL1.Align := alTop;
+  BVL1.Height := 5;
+  BVL1.Ctl3D := false;
+  BVL1.BevelOuter := bvNone;
+
+  sgText.InsertControl(BVL1);
+  BVL1.Visible := False;
+
+  BVL2:=TPanel.Create(Self);
+  BVL2.ParentBackground := False;
+  BVL2.Color := clLime;
+  BVL2.Ctl3D := false;
+  BVL2.BevelOuter := bvNone;
+//  BVL2.Align := alTop;
+  BVL2.Height := 5;
+  BVL2.Width := 600;
+  sgText.InsertControl(BVL2);
+  BVL2.Visible := false;
+
+
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -1795,17 +1874,18 @@ end;
 procedure TMainForm.FormShow(Sender: TObject);
 begin
   InspectorFrame.Initialize;
+  InspectorFrame.ReplaceFrame.FindCaption := ': Macros for replacing';
   ClipartInspectorFrame.Initialize;
   ClipartInspectorFrame.sgAttr.ColCount := 3;
   SVGFrame.SVG := SVG;
+  SVGFrame.Findcaption := ': '+lblCfgTemplate.Caption;
   ClipartFrame.SVG := Clipart;
+  ClipartFrame.Findcaption := ': '+lblCfgClipart.Caption;
   seWidthChange(nil);
   ClipartInspectorFrame.tsReplace.Caption := 'Preview';
   ClipartInspectorFrame.ReplaceFrame.Visible := False;
   pnClipartPreview.SetParentComponent(ClipartInspectorFrame.tsReplace);
   pnClipartPreview.Align :=alClient;
-
-
 end;
 
 
@@ -1864,6 +1944,7 @@ begin
 end;
 
 procedure TMainForm.miTableHeadClick(Sender: TObject);
+var i:integer;
 begin
   XMLEditForm.XML := sgText.Rows[0].Text;
   XMLEditForm.seTags.Visible := False;
@@ -1872,6 +1953,14 @@ begin
   if XMLEditForm.ShowModal=mrOk then
   begin
     sgText.Rows[0].Text := Trim('¹'^M+XMLEditForm.SynEditFrame.SynEditor.Text);
+    for i := 1 to sgText.ColCount-1 do
+    begin
+      if (pos('[', sgText.Cells[i,0])=1) and (pos(']', sgText.Cells[i,0])<6) then
+         sgText.Cells[i,0] := copy(sgText.Cells[i,0], pos(']', sgText.Cells[i,0])+1, Length(sgText.Cells[i,0]));
+      sgText.Cells[i,0] := '['+IntToStr(i)+'] ' + Trim(sgText.Cells[i,0]);
+    end;
+
+
   end;
 
 end;
@@ -1880,6 +1969,7 @@ procedure TMainForm.PaintBoxMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   PaintBox.Visible := True;
+  GridMouse := True;
 
   shpSelection.Visible := (ssLeft in Shift);
 
@@ -2009,29 +2099,51 @@ end;
 procedure TMainForm.PaintBoxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
+    GridMouse := False;
     PaintBox.Visible := False;
 end;
 
 procedure TMainForm.PaintBoxPaint(Sender: TObject);
 var
   i,j:integer;
+
+Function ButtonIsDown(Button:TMousebutton):Boolean;
+var Swap :Boolean;
+    State:short;
+begin
+State:=0;
+Swap:= GetSystemMetrics(SM_SWAPBUTTON)<>0;
+if Swap then
+   case button of
+   mbLeft :State:=getAsyncKeystate(VK_RBUTTON);
+   mbRight:State:=getAsyncKeystate(VK_LBUTTON);
+   end
+else
+   case button of
+   mbLeft :State:=getAsyncKeystate(VK_LBUTTON);
+   mbRight:State:=getAsyncKeystate(VK_RBUTTON);
+   end;
+Result:= (State < 0);
+end;
 begin
   Cell.X := imgPreview.Picture.Width-seFrame.Value*2;
   Cell.Y := imgPreview.Picture.Height-seFrame.Value*2;
 
+
   PaintBox.Canvas.Brush.Style := bsClear;
   PaintBox.Canvas.Pen.Color := clLime;
 
-  PaintBox.Canvas.Rectangle(
-    Round(seFrame.Value * ZoomFactor),
-    Round(seFrame.Value * ZoomFactor),
-    Round((imgPreview.Picture.Width-seFrame.Value*1) * ZoomFactor),
-    Round((imgPreview.Picture.Height-seFrame.Value*1) * ZoomFactor));
 
 //  PaintBox.Canvas.Rectangle();
 
   if (seGridX.Value=0) and (seGridY.Value=0) then
   begin
+  if Not SVGFrame.treeTemplate.Focused or GridMouse then
+  PaintBox.Canvas.Rectangle(
+    Round(seFrame.Value * ZoomFactor),
+    Round(seFrame.Value * ZoomFactor),
+    Round((imgPreview.Picture.Width-seFrame.Value*1) * ZoomFactor),
+    Round((imgPreview.Picture.Height-seFrame.Value*1) * ZoomFactor));
   end
   else
   begin
@@ -2047,24 +2159,36 @@ begin
     if  (seGridY.Value=0) then
       Cell.Y := Cell.X;
 
-    for I := 0 to round((imgPreview.Picture.Width-seFrame.Value*2)/Cell.X) do
+    if Not SVGFrame.treeTemplate.Focused or GridMouse then
+    begin
+      for I := 0 to round((imgPreview.Picture.Width-seFrame.Value*2)/Cell.X)+1 do
+      begin
+        PaintBox.Canvas.MoveTo(Round(Min((seFrame.Value + i * Cell.X),imgPreview.Picture.Width-seFrame.Value)*ZoomFactor),
+          round(seFrame.Value*ZoomFactor) );
+        PaintBox.Canvas.LineTo(Round(Min((seFrame.Value + i * Cell.X),imgPreview.Picture.Width-seFrame.Value)*ZoomFactor),
+           round((imgPreview.Picture.Height - seFrame.Value)*ZoomFactor) );
+      end;
+      for j := 0 to round((imgPreview.Picture.Height-seFrame.Value*2)/Cell.Y)+1 do
+      begin
+        PaintBox.Canvas.MoveTo(round(seFrame.Value*ZoomFactor) ,
+          Round(Min((seFrame.Value + j * Cell.Y),imgPreview.Picture.Height-seFrame.Value)*ZoomFactor));
+        PaintBox.Canvas.LineTo(round((imgPreview.Picture.Width - seFrame.Value)*ZoomFactor),
+          Round(Min((seFrame.Value + j * Cell.Y),imgPreview.Picture.Height-seFrame.Value)*ZoomFactor));
+      end;
+
+{
       for j := 0 to round((imgPreview.Picture.Height-seFrame.Value*2)/Cell.Y) do
       begin
-        if ((i+j) mod 2) = 1 then
-{
-          PaintBox.Canvas.Brush.Style := bsFDiagonal
-        else
-          PaintBox.Canvas.Brush.Style := bsBDiagonal;
-          PaintBox.Canvas.Brush.Color := cllime;
-}
         PaintBox.Canvas.Rectangle(
-         Round((seFrame.Value + i * Cell.X)*ZoomFactor),
-         Round((seFrame.Value + j * Cell.Y)*ZoomFactor),
-         Round((seFrame.Value + (i+1)* Cell.X)*ZoomFactor),
-         Round((seFrame.Value +(j+1)* Cell.Y)*ZoomFactor));
-
+         Round(Min((seFrame.Value + i * Cell.X),imgPreview.Picture.Width-seFrame.Value)*ZoomFactor),
+         Round(Min((seFrame.Value + j * Cell.Y),imgPreview.Picture.Height-seFrame.Value)*ZoomFactor),
+         Round(Min((seFrame.Value + (i+1)* Cell.X), imgPreview.Picture.Width-seFrame.Value) * ZoomFactor+1),
+         Round(Min((seFrame.Value + (j+1)* Cell.Y), imgPreview.Picture.Height-seFrame.Value) * ZoomFactor)+1);
       end;
+}
+    end
   end;
+
   ChildDraw(SVGFrame.SVGNode);
 
 end;
@@ -2091,18 +2215,150 @@ begin
 //   InspectorFrame.SVGNode := InspectorFrame.SVGNode;
 end;
 
+procedure TMainForm.PDFText(AXML: string; aPDF: TPdfDocument);
+var
+   xmlText:TXML_Doc;
+   Box:TPdfBox;
+   Nod, Ref, Prv :TXML_Nod;
+   M:TMatrix;
+
+begin
+  xmlText:=TXML_Doc.Create;
+  try
+    xmlText.xml := AXML;
+    nod:=xmlText.Node['svg'];
+    while nod.Next <> nil do
+    begin
+      Prv := nod;
+      nod := nod.Next;
+      if (nod.LocalName='use') then
+      begin
+        if nod.Attribute['xlink:href']<>'' then
+          Ref := xmlText.FindByHRef(nod.Attribute['xlink:href'])
+        else
+        if nod.Attribute['href']<>'' then
+          Ref := xmlText.FindByHRef(nod.Attribute['href'])
+        else
+          Ref := Nil;
+
+        if Ref<>nil then
+        begin
+          nod.LocalName := 'g';
+          nod.Attribute['xlink:href'] :='';
+          nod.Attribute['href'] :='';
+          nod.Add.ResetXml(Ref.xml);
+        end
+        else
+        begin
+          nod.Destroy;
+          nod := Prv;
+        end;
+      end
+      else
+      if (nod.LocalName='tspan') or
+         (nod.LocalName='textPath')
+      then begin
+        nod.parent.text := nod.parent.text + ' '  + nod.text;
+        nod.Destroy;
+        nod := Prv;
+      end
+      else
+      if (nod.LocalName<>'defs') and
+         (nod.LocalName<>'text') and
+         (nod.LocalName<>'g') and
+         (nod.LocalName<>'symbol')
+      then begin
+        nod.Destroy;
+        nod := Prv;
+      end;
+    end;
+
+    nod:=xmlText.Node['svg'];
+    while nod.Next <> nil do
+    begin
+      Prv := nod;
+      nod := nod.Next;
+      if (nod.LocalName='text')and (nod.parent.LocalName<>'svg') then
+      begin
+        M := NodeTrans(nod);
+        nod.Attribute['transform']:='matrix('
+          +  SvgFloat(M.A[0, 0]) +','
+          +  SvgFloat(M.A[0, 1]) +','
+          +  SvgFloat(M.A[1, 0]) +','
+          +  SvgFloat(M.A[1, 1]) +','
+          +  SvgFloat(M.A[2, 0]) +','
+          +  SvgFloat(M.A[2, 1]) +')';
+        nod.Attribute['x']:='';
+        nod.Attribute['y']:='';
+        nod.parent := xmlText.Node['svg'];
+        nod := Prv;
+      end
+      else
+      if (nod.LocalName<>'text') and
+         (nod.LocalName<>'g')
+      then begin
+        nod.Destroy;
+        nod := Prv;
+      end;
+    end;
+
+    nod:=xmlText.Node['svg'];
+    while nod.Next <> nil do
+    begin
+      Prv := nod;
+      nod := nod.Next;
+      if (nod.LocalName<>'text')
+      then begin
+        nod.Destroy;
+        nod := Prv;
+      end;
+    end;
+
+
+
+//    xmlText.SaveToFile('C:\dc64\Ever\temp\temp.svg');
+
+
+    Box.Left := 0;
+    Box.Top := 0;
+    Box.Width :=aPdf.DefaultPageWidth;
+    Box.Height := aPdf.DefaultPageHeight;
+    nod:=xmlText.Node['svg'];
+    xmlText.Node['svg'].Attribute['transform'] := 'scale('+ SvgFloat(72/StrToIntDef(cbDPI.Text,300))+')';
+    aPdf.Canvas.BeginText;
+    while nod.Next <> nil do begin
+      nod := nod.Next;
+      with aPdf.Canvas do
+      begin
+        M := NodeTrans(nod);
+        SetFont(nod.Attribute['font-family'],
+           StrToIntDef(nod.Attribute['font-size'],8) ,[]);
+        SetTextMatrix(M.A[0, 0], M.A[0, 1], M.A[1, 0], M.A[1, 1], M.A[2, 0], Box.Height - M.A[2, 1]);
+        ShowText(nod.text+' ');
+      end;
+    end;
+    aPdf.Canvas.EndText;
+  finally
+    xmlText.Destroy
+  end;
+end;
+
 procedure TMainForm.PrepareAtr(ANod: TXML_Nod);
 begin
 end;
 
 procedure TMainForm.PrepareClipart;
 begin
+  ClipartInspectorFrame.SVGNode := Nil;
+
   Clipart.Node['svg'].Attribute['id'] := ExtractFileName(edCfgClipart.Text);
   ClipartFrame.SVG := Clipart;
 end;
 
 procedure TMainForm.PrepareXML;
 begin
+  InspectorFrame.SVGNode := Nil;
+
   SVG.Node['svg'].Attribute['id'] := ExtractFileName(edCfgPropotype.Text);
   SvgFrame.SVG := SVG;
   NoTempStyle := False;
@@ -2248,10 +2504,10 @@ begin
   if  MainData.dlgSaveContent.Execute then
   begin
     if MainData.dlgSaveContent.FilterIndex=1 then
-      MainData.dlgSaveContent.FileName := ChangeFileExt(MainData.dlgSaveContent.FileName, 'TSV')
+      MainData.dlgSaveContent.FileName := ChangeFileExt(MainData.dlgSaveContent.FileName, '.TSV')
     else
     if MainData.dlgSaveContent.FilterIndex=2 then
-      MainData.dlgSaveContent.FileName := ChangeFileExt(MainData.dlgSaveContent.FileName, 'TXT');
+      MainData.dlgSaveContent.FileName := ChangeFileExt(MainData.dlgSaveContent.FileName, '.TXT');
 
 
     if MainData.dlgSaveContent.Encodings[MainData.dlgSaveContent.EncodingIndex]='default' then
@@ -2274,6 +2530,7 @@ procedure TMainForm.SaveTable(AFileName: string);
 var i,j:Integer;
   s: string;
 begin
+  sgTextFixedCellClick(nil,0,-1);
   with TStringList.Create do
   try
     for i := 0 to sgText.RowCount-1 do
@@ -2338,10 +2595,12 @@ end;
 
 procedure TMainForm.seFrameChange(Sender: TObject);
 begin
-  PaintBox.Width :=  Round(ZoomFactor * (imgPreview.Picture.Width-seFrame.Value));
-  PaintBox.Height := Round(ZoomFactor * (imgPreview.Picture.Height-seFrame.Value));
+  PaintBox.Width :=  Round(ZoomFactor * (imgPreview.Picture.Width));
+  PaintBox.Height := Round(ZoomFactor * (imgPreview.Picture.Height));
   SVGFrame.FrameSize := seFrame.Value;
   lblCellSize.Caption := IntToStr(Round(Cell.X))+' : '+IntToStr(Round(Cell.Y));
+  PaintBox.Invalidate;
+
 end;
 
 procedure TMainForm.seFrameEnter(Sender: TObject);
@@ -2427,6 +2686,9 @@ end;
 procedure TMainForm.sgTextDrawCell(Sender: TObject; ACol, ARow: Integer;
   Rect: TRect; State: TGridDrawState);
 begin
+  if (ACol=0)and (Arow>0) then
+    sgText.Canvas.TextRect(Rect, Rect.Left, Rect.Top+2, IntToStr(Arow));
+
   if ARow=sgText.Row then
   begin
     sgText.Canvas.Brush.Style := bsClear;
@@ -2435,6 +2697,89 @@ begin
 //    sgText.Canvas.Rectangle(Rect.Left-5, Rect.Top, Rect.Right+1, Rect.Bottom);
   end;
 
+end;
+
+procedure TMainForm.sgTextFixedCellClick(Sender: TObject; ACol, ARow: Integer);
+var
+  i,j:integer;
+  sl:TStringList;
+  s:string;
+  Srt:boolean;
+
+begin
+  if Arow=0 then
+  begin
+     sl:=TStringList.Create;
+     sl.Sorted := True;
+     sl.Duplicates := dupAccept;
+     Srt := True;
+
+     if (ARow=-1)or(ACol=0) then
+       Srt := True
+     else
+       Srt := copy(sgText.Cells[Acol,0],1,1)<>'^';
+
+
+
+     for I := 0 to sgText.ColCount-1 do
+     begin
+       sgText.Cells[i,0]:=Stringreplace(sgText.Cells[i,0], '^[','[',[rfReplaceAll]);
+       sgText.Cells[i,0]:=Stringreplace(sgText.Cells[i,0], 'v[','[',[rfReplaceAll]);
+       sgText.Cells[i,0]:=Stringreplace(sgText.Cells[i,0], '^¹','¹',[rfReplaceAll]);
+       sgText.Cells[i,0]:=Stringreplace(sgText.Cells[i,0], 'v¹','¹',[rfReplaceAll]);
+     end;
+
+     if Srt then
+     begin
+       for I := 1 to sgText.RowCount-1 do
+       begin
+         s:=sgText.Cells[Acol,i];
+         if ACol=0 then
+           s:=RightStr('00000'+s,5);
+         j := sl.Add(s);
+         while (j<sl.Count-1) and (sl[j]=sl[j+1]) do inc(j);
+
+         if j+1 <> i then
+           THackGrid(sgText).MoveRow(i, j+1);
+       end;
+       if (ARow<>-1)and(ACol<>0) then
+        sgText.Cells[Acol,0] := '^'+sgText.Cells[Acol,0];
+     end
+     else
+     begin
+       for I := sgText.RowCount-1 downto 1 do
+       begin
+         s:=sgText.Cells[Acol,i];
+         if ACol=0 then
+           s:=RightStr('00000'+s,5);
+         j := sl.Add(s);
+//         while (j<sl.Count-1) and (sl[j]=sl[j+1]) do inc(j);
+
+         if sgText.RowCount -j-1 <> i then
+           THackGrid(sgText).MoveRow(i, sgText.RowCount-j-1);
+       end;
+       if (ACol<>0) then
+         sgText.Cells[Acol,0] := 'v'+sgText.Cells[Acol,0];
+     end;
+
+     if sgText.Row  <sgText.TopRow then
+       sgText.TopRow := sgText.Row;
+     if sgText.Row > sgText.TopRow+sgText.VisibleRowCount  then
+       sgText.TopRow := sgText.Row-sgText.VisibleRowCount+1;
+
+
+
+     sl.Destroy;
+  end;
+end;
+
+procedure TMainForm.sgTextKeyPress(Sender: TObject; var Key: Char);
+begin
+  if key=#13 then
+  begin
+    tbCellEditClick(self);
+    key:=#0;
+  end;
 end;
 
 procedure TMainForm.sgTextSelectCell(Sender: TObject; ACol, ARow: Integer;
@@ -3115,7 +3460,7 @@ begin
         SVG.SaveToFile(edCfgRoot.Text+edCfgPropotype.text);
 
       Clipart.Node['svg'].Attribute['xmlns:dekart']:='http://127.0.0.1';
-      if Clipart.Node['svg'].Nodes.Count>0 then
+      if (Clipart.Node['svg'].Nodes.Count>0) and (edCfgClipart.text<>'') then
         Clipart.SaveToFile(edCfgRoot.Text+edCfgClipart.text);
     end;
   end;

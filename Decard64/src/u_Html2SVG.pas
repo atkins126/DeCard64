@@ -111,7 +111,7 @@ end;
 function HtmlLength(s:string):integer;
 var i:Integer;
     amp:Boolean;
-    ws:WideString;
+    ws:string;
 begin
   ws:=(s);
 
@@ -146,7 +146,7 @@ begin
 end;
 
 
-function ParentStyle(ANod:TXML_Nod;aAttr:string;Def:widestring=''):widestring;
+function ParentStyle(ANod:TXML_Nod;aAttr:string;Def:string=''):string;
 var Nod:TXML_Nod;
 begin
   Nod := ANod;
@@ -174,8 +174,8 @@ var
 
 function DoReplace(txt:string;Nod:TXML_Nod):string;
 var i:integer;
-  s,n:string;
-  sl,sn, idx:TStringList;
+  s,n,r:string;
+  sn, idx:TStringList;
   Prnt:TXML_Nod;
 begin
 
@@ -220,14 +220,16 @@ begin
         n:=WideUpperCase(Copy(sn[i], 1, Pos('=', sn[i])-1));
 
 
-//        n:=AnsiWideUpperCase(sn.Names[i]);
         if idx.IndexOf(n)=-1 then
         begin
           idx.Add(n);
-          if Pos(n, UpperCase(s)) >0 then
+          if Pos(WideString(n), WideUpperCase(s)) >0 then
           begin
-//             s := StringReplace(s, n, (sn.Values[n] ,[rfReplaceAll, rfIgnoreCase]);
-             s := StringReplace(s, n, copy(sn[i],length(n)+2, Length(sn[i])) ,[rfReplaceAll, rfIgnoreCase]);
+            r := copy(sn[i],length(n)+2, Length(sn[i]));
+            if copy(r,1,1)='=' then
+              s := StringReplace(s, n, copy(r,2,length(r)) ,[rfReplaceAll])
+            else
+              s := StringReplace(s, n, r ,[rfReplaceAll, rfIgnoreCase]);
           end;
         end;
 
@@ -327,12 +329,12 @@ begin
   nod.Attribute['font-weight'] := ParentStyle(nod,'font-weight');
   nod.Attribute['font-style'] := ParentStyle(nod,'font-style');
   nod.Attribute['letter-spacing'] := ParentStyle(nod,'letter-spacing','0');
-  nod.Attribute['font-variant'] := ParentStyle(nod,'normal');
+  nod.Attribute['font-variant'] := ParentStyle(nod,'font-variant');
 
   Nod.text := StringReplace(Nod.text,'[p]',' [p] ',[rfReplaceAll, rfIgnoreCase]);
   Nod.text := StringReplace(Nod.text,'  ',' ',[rfReplaceAll, rfIgnoreCase]);
 
-  if Pos('[U]',UpperCase(Nod.text))>0 then
+  if Pos(WideString('[U]'),WideUpperCase(Nod.text))>0 then
   begin
     s := WideUpperCase(Nod.text);
     s := StringReplace(s,'&#X','&#x',[rfReplaceAll, rfIgnoreCase]);
@@ -340,18 +342,15 @@ begin
   end;
 
   if ParentStyle(nod,'font-variant')='small' then
-  begin
-    s := LowerCase(Nod.text);
-    Nod.text := s;
-  end;
+    Nod.text := WideLowerCase(Nod.text)
+  else
   if ParentStyle(nod,'font-variant')='caps' then
-  begin
-    s := WideUpperCase(Nod.text);
-    s := StringReplace(s,'&#X','&#x',[rfReplaceAll, rfIgnoreCase]);
-    Nod.text := s;
-  end;
+    Nod.text := StringReplace(WideUpperCase(Nod.text),'&#X','&#x',[rfReplaceAll, rfIgnoreCase])
+  else
+  if ParentStyle(nod,'font-variant')='first' then
+    Nod.text := WideUpperCase(copy(Nod.text,1,1)) + WideLowerCase(copy(Nod.text,2,length(Nod.text)-1));
 
-  if Pos('[Z]',UpperCase(Nod.text))>0 then
+  if Pos(WideString('[Z]'),WideUpperCase(Nod.text))>0 then
   begin
     Nod.text := StringReplace(Nod.text,'[Z]','',[rfReplaceAll, rfIgnoreCase]);
     DoZoom := True
@@ -359,7 +358,7 @@ begin
   else
     DoZoom := false;
 
-  if (Pos('[W]',UpperCase(Nod.text))>0) or (nod.Attribute['textLength']<>'') then
+  if (Pos(WideString('[W]'),WideUpperCase(Nod.text))>0) or (nod.Attribute['textLength']<>'') then
   begin
     Nod.text := StringReplace(Nod.text,'[W]','',[rfReplaceAll, rfIgnoreCase]);
     DoWidth := True
@@ -609,7 +608,7 @@ begin
   end
   end
   else
-  if Pos('[P]',UpperCase(Nod.text))>0 then
+  if Pos(WideString('[P]'),WideUpperCase(Nod.text))>0 then
   begin
      s:= StringReplace(Nod.text,'[p][p]','[p]&#x2007;[p]',[rfReplaceAll,rfIgnoreCase]);
      s := '<tspan>' + StringReplace(s ,'[p]','</tspan><tspan x="'+IntToStr(StrToIntDef(Nod.Attribute['x'] ,0))
@@ -809,10 +808,12 @@ begin
   end;
 end;
 
+
 procedure level(nod:TXML_Nod);
 var
   i:Integer;
   s:string;
+  r,g,b:byte;
 
 begin
 {
@@ -823,6 +824,7 @@ begin
       NOD.Attributes[i].value := DoReplace(NOD.Attribute['dekart:'+StringReplace(NOD.Attributes[i].name,':','_',[rfReplaceAll])], NOD);
 }
   for i := 0 to NOD.Attributes.Count-1 do
+  begin
     if (Pos('dekart:', NOD.Attributes[i].name)=1) then
     begin
       s := StringReplace(Copy(NOD.Attributes[i].name,8,256),'_',':',[rfReplaceAll]);
@@ -840,6 +842,47 @@ begin
            NOD.Attribute[s] := 'visible';
       end;
     end;
+
+    if (NOD.Attributes[i].name='fill') or
+       (NOD.Attributes[i].name='stroke') or
+       (NOD.Attributes[i].name='stop-color') or
+       (NOD.Attributes[i].name='flood-color')
+    then
+    begin
+      s := NOD.Attributes[i].value;
+
+      if copy(s,1,4)='rgb(' then
+      begin
+        s:=copy(s,pos('(',s)+1,length(s));
+        r := StrToIntDef(copy(s,1,pos(',',s)-1),0);
+        s:=copy(s,pos(',',s)+1,length(s));
+        g := StrToIntDef(copy(s,1,pos(',',s)-1),0);
+        s:=copy(s,pos(',',s)+1,length(s));
+        b := StrToIntDef(copy(s,1,pos(')',s)-1),0);
+        NOD.Attributes[i].value := '#'+IntToHex(r,2)+IntToHex(g ,2)+ IntToHex(b ,2);
+      end;
+
+      if copy(s,1,5)='rgba(' then
+      begin
+        s:=copy(s,pos('(',s)+1,length(s));
+        r := StrToIntDef(copy(s,1,pos(',',s)-1),0);
+        s:=copy(s,pos(',',s)+1,length(s));
+        g := StrToIntDef(copy(s,1,pos(',',s)-1),0);
+        s:=copy(s,pos(',',s)+1,length(s));
+        b := StrToIntDef(copy(s,1,pos(',',s)-1),0);
+
+        NOD.Attributes[i].value := '#'+IntToHex(r,2)+IntToHex(g ,2)+ IntToHex(b ,2);
+
+        s:=copy(s,pos(',',s)+1,length(s));
+        s:=copy(s,1, pos(')',s)-1);
+        NOD.Attribute[NOD.Attributes[i].name+'-opacity'] := s;
+
+      end;
+
+    end;
+
+  end;
+
   if NOD.Attribute['visibility'] = 'hidden' then
      NOD.Attribute['display'] := 'none';
 
@@ -898,14 +941,16 @@ begin
     NOD.xml := DoReplace(NOD.Attribute['dekart:body'], NOD);
   end
   else
-  if (nod.LocalName='text')and Assigned(nod.Nodes.ByName('rect'))
+  if (nod.LocalName='text')
   then begin
-    level(nod.Nodes.ByName('rect'));
+    for i:=0 to nod.Nodes.Count-1 do
+      level(nod.Nodes[i]);
+
     if nod.text <> '' then
       FormatText(nod);
   end
   else
-  if (nod.LocalName='text') and (Pos('[P]',UpperCase(nod.text))>0)
+  if (nod.LocalName='text') and (Pos(WideString('[P]'),WideUpperCase(nod.text))>0)
   then
     FormatText(nod)
   else
@@ -1304,6 +1349,9 @@ bkg := nil;
         z:='>';
         if i > j then
         begin
+          if ParentStyle(NOD, 'font-variant')='first' then
+            xn.Add('text').text := WideUpperCase(Copy(s,j,1)) + WideLowerCase(Copy(s,j+1,i-j-1))
+          else
           if ParentStyle(NOD, 'font-variant')='caps' then
             xn.Add('text').text := StringReplace(WideUpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
           else
@@ -1373,7 +1421,9 @@ bkg := nil;
       begin
         if i > j then
         begin
-
+          if ParentStyle(NOD, 'font-variant')='first' then
+            xn.Add('text').text := WideUpperCase(Copy(s,j,1)) + WideLowerCase(Copy(s,j+1,i-j-1))
+          else
           if ParentStyle(NOD, 'font-variant')='caps' then
             xn.Add('text').text := StringReplace(WideUpperCase(Copy(s,j,i-j)),'&#X','&#x',[rfReplaceAll])
           else
@@ -1525,15 +1575,13 @@ bkg := nil;
            n2.Attribute['fill'] := ParentStyle(xn, 'fill');
            n2.Attribute['stroke'] := ParentStyle(xn, 'stroke');
            n2.Attribute['stroke-width'] := ParentStyle(xn, 'stroke-width');
-
-
+//           n2.Attribute['baseline-shift'] := ParentStyle(xn, 'baseline-shift');
            n2.Attribute['width'] := IntToStr(w1);
-
-
 
            n2.Attribute['x'] := IntToStr(StrToIntDef(n1.Attribute['width'],0) + w5);
 
            n2.Attribute['height'] := ParentStyle(xn,'font-size');
+           n2.Attribute['y'] := ParentStyle(xn, 'dy');
 
            if pos('%', ParentStyle(xn,'line-height',''))>0 then
            begin
@@ -1544,8 +1592,10 @@ bkg := nil;
            end;
 
            n1.Attribute['width'] := IntToStr(StrToIntDef(n1.Attribute['width'],0) + w5 + w1);
-           n1.Attribute['height'] := IntToStr(Max(StrToIntDef(n1.Attribute['height'],0),StrToIntDef(n2.Attribute['height'],0)) );
-
+           if StrToIntDef(n2.Attribute['y'],0)>0 then
+             n1.Attribute['height'] := IntToStr(Max(StrToIntDef(n1.Attribute['height'],0),StrToIntDef(n2.Attribute['height'],0)-StrToIntDef(n2.Attribute['y'],0)) )
+           else
+             n1.Attribute['height'] := IntToStr(Max(StrToIntDef(n1.Attribute['height'],0),StrToIntDef(n2.Attribute['height'],0)) );
            w3 := w2-2*w1;
            w5 := 0;
         end;

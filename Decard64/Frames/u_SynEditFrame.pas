@@ -9,6 +9,13 @@ uses
   SynEditSearch, Vcl.Menus, Vcl.ComCtrls, Vcl.ToolWin, SynEdit,  SynHighlighterIni, ProfixXML,
   SynEditCodeFolding, Vcl.ExtCtrls;
 type
+
+  TSynXMLSyn=class(SynHighlighterXML.TSynXMLSyn)
+  public
+    function IsIdentChar(AChar: WideChar): Boolean;override;
+  end;
+
+
   TSynEditFrame = class(TFrame)
     actlMain: TActionList;
     actEditCut: TAction;
@@ -84,12 +91,15 @@ type
     procedure SynEditorExit(Sender: TObject);
     procedure FindDialogClose(Sender: TObject);
     procedure tbGlyphClick(Sender: TObject);
+    procedure FindDialogShow(Sender: TObject);
+    procedure ReplaceDialogShow(Sender: TObject);
   private
     gsSearchText: string;
     gsReplaceText: string;
     FSVGNode: TXML_Nod;
     procedure SetSVGNode(const Value: TXML_Nod);
   public
+    FindCaption:string;
     procedure Apply;
     property SVGNode: TXML_Nod read FSVGNode write SetSVGNode;
 
@@ -102,6 +112,8 @@ implementation
 
 uses
    u_MainData, SynEditTypes, frmGlyph, u_ThreadRender;
+
+
 
 { TSynEditFrame }
 
@@ -283,6 +295,14 @@ begin
   DoSearchReplaceText(False, not (frDown in FindDialog.Options));
 end;
 
+procedure TSynEditFrame.FindDialogShow(Sender: TObject);
+var
+  Buffer: array[0..255] of Char;
+begin
+  GetWindowText(FindDialog.Handle, Buffer, SizeOf(Buffer));
+  SetWindowText(FindDialog.Handle, PChar(@Buffer)+Findcaption);
+end;
+
 procedure TSynEditFrame.ReplaceDialogFind(Sender: TObject);
 begin
   gsSearchText:=ReplaceDialog.FindText;
@@ -294,6 +314,14 @@ begin
   gsSearchText:=ReplaceDialog.FindText;
   gsReplaceText:=ReplaceDialog.ReplaceText;
   DoSearchReplaceText(True, not (frDown in ReplaceDialog.Options));
+end;
+
+procedure TSynEditFrame.ReplaceDialogShow(Sender: TObject);
+var
+  Buffer: array[0..255] of Char;
+begin
+  GetWindowText(ReplaceDialog.Handle, Buffer, SizeOf(Buffer));
+  SetWindowText(ReplaceDialog.Handle, PChar(@Buffer)+Findcaption);
 end;
 
 procedure TSynEditFrame.SetSVGNode(const Value: TXML_Nod);
@@ -338,6 +366,13 @@ begin
     SynEditor.Options := SynEditor.Options + [eoShowSpecialChars]
   else
     SynEditor.Options := SynEditor.Options - [eoShowSpecialChars]
+end;
+
+{ TSynXMLSyn }
+
+function TSynXMLSyn.IsIdentChar(AChar: WideChar): Boolean;
+begin
+  Result := AChar > #32;
 end;
 
 end.

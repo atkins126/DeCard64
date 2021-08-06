@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, profixxml, Vcl.ComCtrls,
-  Vcl.ToolWin, Vcl.Menus, System.UITypes;
+  Vcl.ToolWin, Vcl.Menus, System.UITypes, Vcl.ExtCtrls;
 
 type
   TSvgTreeFrame = class(TFrame)
@@ -56,6 +56,8 @@ type
     btnDown: TToolButton;
     btnSearch1: TToolButton;
     tbXML: TToolButton;
+    pnFindRemind: TPanel;
+    pnRemindDialog: TPanel;
     procedure treeTemplateCollapsing(Sender: TObject; Node: TTreeNode;
       var AllowCollapse: Boolean);
     procedure tbXMLClick(Sender: TObject);
@@ -90,6 +92,7 @@ type
     procedure miOuterCrossClick(Sender: TObject);
     procedure miInnerCrssClick(Sender: TObject);
     procedure miPattertClick(Sender: TObject);
+    procedure svgFindDialogShow(Sender: TObject);
   private
     { Private declarations }
     FSVG: TXML_Doc;
@@ -104,6 +107,7 @@ type
     procedure SetFrameSize(const Value: integer);
   public
     { Public declarations }
+    Findcaption: string;
     procedure ResetSvg(ANode:TXML_Nod; AItem:TTreeNode);
     property SVG: TXML_Doc read FSVG write SetSVG;
     property FocusedNode:TTreeNode read GetFocusedNode write SetFocusedNode;
@@ -237,6 +241,12 @@ end;
 procedure TSvgTreeFrame.btnSearch1Click(Sender: TObject);
 begin
   svgFindDialog.Execute(treeTemplate.Handle);
+
+  pnFindRemind.Visible := True;
+  pnRemindDialog.Visible := True;
+  pnRemindDialog.Parent := pnFindRemind;
+  pnRemindDialog.Top :=0;
+  Winapi.Windows.SetParent(pnRemindDialog.handle, svgFindDialog.Handle);
 end;
 
 procedure TSvgTreeFrame.btnUpClick(Sender: TObject);
@@ -327,6 +337,7 @@ begin
     TreNod.MoveTo(FocusedNode,naInsert);
   end;
   nod.ResetXml(AXML);
+  //nod.xml := AXML;
   ResetSvg(nod, TreNod);
 
   TreNod.Selected := True;
@@ -566,6 +577,7 @@ procedure TSvgTreeFrame.svgFindDialogClose(Sender: TObject);
 begin
   FFindAttr := '';
   Application.MainForm.SetFocus;
+  pnFindRemind.Visible := False;
 end;
 
 procedure TSvgTreeFrame.svgFindDialogFind(Sender: TObject);
@@ -585,8 +597,8 @@ var
      end
      else
      begin
-       s1 := UpperCase(svgFindDialog.FindText);
-       s2 := UpperCase(txt);
+       s1 := WideUpperCase(svgFindDialog.FindText);
+       s2 := WideUpperCase(txt);
      end;
      if frWholeWord in svgFindDialog.Options then
        result := s1 = s2
@@ -630,6 +642,14 @@ begin
     end;
     FFindAttr := '';
   end;
+end;
+
+procedure TSvgTreeFrame.svgFindDialogShow(Sender: TObject);
+var
+  Buffer: array[0..255] of Char;
+begin
+  GetWindowText(svgFindDialog.Handle, Buffer, SizeOf(Buffer));
+  SetWindowText(svgFindDialog.Handle, PChar(@Buffer)+FindCaption);
 end;
 
 procedure TSvgTreeFrame.tbXMLClick(Sender: TObject);

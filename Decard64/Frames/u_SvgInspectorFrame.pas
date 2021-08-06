@@ -44,6 +44,7 @@ type
     procedure aEditExecute(Sender: TObject);
     procedure tsAtrResize(Sender: TObject);
     procedure sgAttrTopLeftChanged(Sender: TObject);
+    procedure sgAttrKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     FSVGNode: TXML_Nod;
     FEditNode: TXML_Nod;
@@ -131,18 +132,23 @@ begin
     XMLEditForm.seTags.Visible := True;
     XMLEditForm.splTags.Visible := True;
     XMLEditForm.splTags.top :=1;
+    XMLEditForm.TEXT := sgAttr.Cells[sgAttr.Col,sgAttr.Row];
   end
   else
   begin
     XMLEditForm.seTags.Visible := False;
     XMLEditForm.splTags.Visible := False;
+    XMLEditForm.SynEditFrame.SynEditor.Text := sgAttr.Cells[sgAttr.Col,sgAttr.Row];
   end;
 
-  XMLEditForm.XML := sgAttr.Cells[sgAttr.Col,sgAttr.Row];
+
   XMLEditForm.Caption := '<'+SVGNode.LocalName+'>.'+s;
   if XMLEditForm.ShowModal=mrOk then
   begin
-    sgAttr.Cells[sgAttr.Col,sgAttr.Row] := StringReplace(XMLEditForm.XML,^M,' ',[rfReplaceAll]);
+    if sgAttr.Cells[0,sgAttr.Row]='body' then
+      sgAttr.Cells[sgAttr.Col,sgAttr.Row] := XMLEditForm.TEXT
+    else
+      sgAttr.Cells[sgAttr.Col,sgAttr.Row] := StringReplace(XMLEditForm.XML,#13#10,'',[rfReplaceAll]);
     sgAttrSetEditText(sgAttr,sgAttr.Col, sgAttr.Row,sgAttr.Cells[sgAttr.Col,sgAttr.Row] );
   end;
 end;
@@ -169,6 +175,7 @@ begin
   sgAttr.Destroy;
 
   sgAttr := THackStringGrid.Create(self);
+
   with sgAttr do
   begin
     SetParentComponent(tsAtr);
@@ -181,13 +188,14 @@ begin
     FixedCols := 1;
     RowCount := 2;
     Ctl3d:=false;
-//    goFixedHorzLine, goFixedVertLine,
-    Options := [ goVertLine, goHorzLine, goDrawFocusSelected, goColSizing, goEditing, {goFixedColClick,} goAlwaysShowEditor]; //goAlwaysShowEditor,
+    Options := [ goVertLine, goHorzLine, goDrawFocusSelected, goColSizing, goEditing,  goAlwaysShowEditor];
     OnDrawCell := sgAttrDrawCell;
     OnSelectCell := sgAttrSelectCell;
     OnSetEditText := sgAttrSetEditText;
     OnDblClick := aEditExecute;
     OnTopLeftChanged := sgAttrTopLeftChanged;
+    OnKeyDown := sgAttrKeyDown;
+
   end;
 
   sgAttr.Rows[0].CommaText := '"  NAME","  PARENT","  VALUE","  OVERRIDE"';
@@ -207,7 +215,7 @@ end;
 procedure TSvgInspectorFrame.pcAtrInspectorChange(Sender: TObject);
 begin
 //    tsReplace.SetText(SVGNode.Attribute['dekart:replace'], False);
-
+  ReplaceFrame.SynEditor.ReadOnly := pcAtrInspector.ActivePage<>tsReplace;
 end;
 
 
@@ -309,7 +317,7 @@ procedure TSvgInspectorFrame.SetSVGNode(const Value: TXML_Nod);
     begin
     end
     else
-    if (LocalName<>'stop') and (Aname='stop-color')or(Aname='stop-opacity')  then
+    if (LocalName<>'stop') and ((Aname='stop-color')or(Aname='stop-opacity'))  then
       exit
     else
 
@@ -541,12 +549,27 @@ begin
   end;
 end;
 
+procedure TSvgInspectorFrame.sgAttrKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if (Key=13) and (ssCtrl in Shift) then
+    if NOT assigned(THackStringGrid(sgAttr).InplaceEditor)
+     or not (THackInplaceEditList(THackStringGrid(sgAttr).InplaceEditor).EditStyle=esPickList) then
+    begin
+      aEdit.Execute;
+      Key :=0
+    end;
+
+end;
+
 procedure TSvgInspectorFrame.sgAttrSelectCell(Sender: TObject; ACol,
   ARow: Integer; var CanSelect: Boolean);
 var
   s:string;
   HelpNod:TXML_Nod;
 begin
+  if SVGNode = nil then exit;
+
   s:= '<' + SVGNode.LocalName+'>';
   HelpNod := MainData.HLP.Node['help'].Node['elements'].Nodes.ByName(SVGNode.LocalName);
   if HelpNod <> nil then

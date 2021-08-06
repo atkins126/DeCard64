@@ -226,7 +226,7 @@ object CellEditForm: TCellEditForm
     object chbScrollPreview: TCheckBox
       Left = 82
       Top = 16
-      Width = 123
+      Width = 97
       Height = 17
       Caption = 'Preview'#9660#9650
       Font.Charset = DEFAULT_CHARSET
@@ -254,13 +254,15 @@ object CellEditForm: TCellEditForm
       ExplicitWidth = 434
       ExplicitHeight = 210
     end
-    inherited tbrEditor: TToolBar
+    inherited pscrSysEdit: TPageScroller
       Width = 434
       ExplicitWidth = 434
-      inherited ToolButton3: TToolButton
-        Hint = 'Add selected to [Common]'
-        Visible = True
-        OnClick = CellEditFrameToolButton3Click
+      inherited tbrEditor: TToolBar
+        inherited ToolButton3: TToolButton
+          Hint = 'Add selected to [Common]'
+          Visible = True
+          OnClick = CellEditFrameToolButton3Click
+        end
       end
     end
   end
