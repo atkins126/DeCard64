@@ -2,6 +2,8 @@ unit resvg;
 
 interface
 
+uses Vcl.Imaging.pngimage;
+
 const
 
 {$IFDEF WIN32}
@@ -100,7 +102,7 @@ Type
  function resvg_node_exists(tree:Presvg_render_tree; id:PChar):boolean; cdecl; external resvgdll;
  function resvg_get_node_bbox(tree:Presvg_render_tree; id:PChar; bbox:Presvg_rect):boolean; cdecl; external resvgdll;
  procedure resvg_tree_destroy(tree:Presvg_render_tree); cdecl; external resvgdll;
- procedure resvg_render(tree:Presvg_render_tree; fit_to:resvg_fit_to; width, height:integer; Img:Pchar); cdecl; external resvgdll;
+ procedure resvg_render(tree:Presvg_render_tree; fit_to:resvg_fit_to; trans: resvg_transform; width, height:integer; Img:Pchar); cdecl; external resvgdll;
 
  procedure resvg_options_load_system_fonts(opt:Presvg_options); cdecl; external resvgdll;
  function resvg_options_create():Presvg_options; cdecl; external resvgdll;
@@ -112,8 +114,52 @@ Type
  procedure resvg_options_set_text_rendering_mode(opt:Presvg_options;  mode:resvg_text_rendering );cdecl; external resvgdll;
  procedure resvg_options_set_image_rendering_mode(opt:Presvg_options;  mode:resvg_image_rendering );cdecl; external resvgdll;
  function resvg_options_load_font_file(opt:Presvg_options; file_path:PChar):Integer ;cdecl; external resvgdll;
+ function resvg_transform_identity():resvg_transform; cdecl; external resvgdll;
+
+ procedure BmpGRBA(BMP: TPNGImage; Img: Pointer);
+
 
 implementation
+
+uses  Winapi.Windows;
+
+type
+  PRGBTripleArray = ^TRGBTripleArray;
+  TRGBTripleArray = array [Byte] of TRGBTriple;
+  PRGBQuadArray = ^TRGBQuadArray;
+  TRGBQuadArray = array [Byte] of TRGBQuad;
+
+procedure BmpGRBA(BMP: TPNGImage; Img: Pointer);
+var
+  i, j: Integer;
+  RowBMP: PRGBTripleArray;
+  RowSVG: PRGBQuadArray;
+  Alp: pByteArray;
+begin
+
+  RowSVG := Img;
+
+  for j := 0 to BMP.height - 1 do
+  begin
+    RowBMP := BMP.Scanline[j];
+    Alp := BMP.AlphaScanline[j];
+    for i := 0 to BMP.width - 1 do
+      if (Alp = nil)and(RowSVG[i + j * BMP.width].rgbReserved = 0) then
+      begin
+        RowBMP[i].rgbtRed := 255;
+        RowBMP[i].rgbtGreen := 255;
+        RowBMP[i].rgbtBlue := 255;
+      end
+      else
+      begin
+        RowBMP[i].rgbtRed := RowSVG[i + j * BMP.width].rgbBlue;
+        RowBMP[i].rgbtGreen := RowSVG[i + j * BMP.width].rgbGreen;
+        RowBMP[i].rgbtBlue := RowSVG[i + j * BMP.width].rgbRed;
+        if (Alp <> nil) then
+          Alp[i] := RowSVG[i + j * BMP.width].rgbReserved;
+      end;
+  end;
+end;
 
 
 end.

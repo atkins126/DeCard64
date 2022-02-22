@@ -42,7 +42,6 @@ var
   LocalFonts: string;
   FontList:string;
 
-procedure BmpGRBA(BMP: TPNGImage; Img: Pointer);
 procedure ResetFonts(APath: string);
 
 implementation
@@ -134,6 +133,7 @@ var
   fmt: string;
 
   fit_to: resvg_fit_to;
+  trans: resvg_transform;
   tree: ^presvg_render_tree;
   pth: utf8String;
 
@@ -172,7 +172,7 @@ begin
 
     try
 
-      resvg_render(tree, fit_to, Round(sz.width), Round(sz.height), @(Img[0]));
+      resvg_render(tree, fit_to, resvg_transform_identity(), Round(sz.width), Round(sz.height), @(Img[0]));
 
     except
 
@@ -198,39 +198,6 @@ begin
 
 end;
 
-type
-  PRGBTripleArray = ^TRGBTripleArray;
-  TRGBTripleArray = array [Byte] of TRGBTriple;
-  PRGBQuadArray = ^TRGBQuadArray;
-  TRGBQuadArray = array [Byte] of TRGBQuad;
-
-procedure BmpGRBA(BMP: TPNGImage; Img: Pointer);
-var
-  i, j: Integer;
-  RowBMP: PRGBTripleArray;
-  RowSVG: PRGBQuadArray;
-begin
-
-  RowSVG := Img;
-
-  for j := 0 to BMP.height - 1 do
-  begin
-    RowBMP := BMP.Scanline[j];
-    for i := 0 to BMP.width - 1 do
-      if RowSVG[i + j * BMP.width].rgbReserved = 0 then
-      begin
-        RowBMP[i].rgbtRed := 255;
-        RowBMP[i].rgbtGreen := 255;
-        RowBMP[i].rgbtBlue := 255;
-      end
-      else
-      begin
-        RowBMP[i].rgbtRed := RowSVG[i + j * BMP.width].rgbBlue;
-        RowBMP[i].rgbtGreen := RowSVG[i + j * BMP.width].rgbGreen;
-        RowBMP[i].rgbtBlue := RowSVG[i + j * BMP.width].rgbRed;
-      end;
-  end;
-end;
 
 function GetFontName(AFontFile: string): ansistring;
 // my own, based on PascalType Project
