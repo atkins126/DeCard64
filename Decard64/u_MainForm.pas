@@ -221,6 +221,9 @@ type
     ClerrSelection1: TMenuItem;
     N2: TMenuItem;
     btnBleed2mm: TButton;
+    Label7: TLabel;
+    edPageBlank: TEdit;
+    sbPageBlank: TSpeedButton;
     procedure sbOpenRootClick(Sender: TObject);
     procedure sbOpenTextClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
@@ -325,6 +328,7 @@ type
     procedure ClerrSelection1Click(Sender: TObject);
     procedure FillSelection1Click(Sender: TObject);
     procedure btnBleed2mmClick(Sender: TObject);
+    procedure sbPageBlankClick(Sender: TObject);
   private
     { Private declarations }
     FSel:TRect;
@@ -685,7 +689,7 @@ begin
 end;
 
 procedure TMainForm.btnProcessClick(Sender: TObject);
-var i,j,cnt,n, w, h:Integer;
+var i, j, k, cnt, n, w, h:Integer;
   x1,x2:TXML_Doc;
   s,sx1,sxb1, fmt, fn, DPI,ZM :string;
   f:TFileStream;
@@ -748,6 +752,9 @@ var
   end;
 
   procedure SaveRender;
+  var
+    ii: Integer;
+    s: string;
   begin
 
     fn := ResultName(cbFileName.Text, sgText.RowCount - 1, i, j) + '.SVG';
@@ -980,6 +987,15 @@ begin
       Attribute['height'] := '100%';
     end;
 
+    if edPageBlank.Text<>'' then
+      with x1.Nodes.Last.Add('image') do
+      begin
+        Attribute['id'] := 'imgPageBack';
+        Attribute['preserveAspectRatio'] := 'xMinYMin meet';
+        Attribute['width'] := '100%';
+        Attribute['height'] := '100%';
+      end;
+
     // AddBack(x1,0);
 
     S := x1.Nodes.Last.Attribute['fill'];
@@ -1064,6 +1080,14 @@ begin
             Attribute['height'] := '100%';
           end;
         end;
+      if edPageBlank.Text<>'' then
+        with x1bk.Nodes.Last.Add('image') do
+        begin
+          Attribute['id'] := 'imgPageBack';
+          Attribute['preserveAspectRatio'] := 'xMinYMin meet';
+          Attribute['width'] := '100%';
+          Attribute['height'] := '100%';
+        end;
 
       sxb1 := x1bk.xml;
     end;
@@ -1120,6 +1144,16 @@ begin
 
       for j := 1 to Cnt do
       begin
+
+        if (n=0) and (x1.Nodes.Last.Nodes.ByID('imgPageBack')<>nil) then
+        begin
+          s := edPageBlank.Text;
+          for k :=0 to sgText.ColCount-1 do
+            s := StringReplace(s, '[' + IntToStr(k)+']', sgText.Cells[k, i], [rfReplaceAll, rfIgnoreCase]);
+          x1.Nodes.Last.Nodes.ByID('imgPageBack').Attribute['xlink:href'] := s;
+          if edBackTemplate.Text <> '' then
+            x1bk.Nodes.Last.Nodes.ByID('imgPageBack').Attribute['xlink:href'] := s;
+        end;
 
         if chbMirror.Checked then
           x2.Nodes.Last.Attribute['transform'] := 'translate(' +
@@ -2160,7 +2194,10 @@ begin
   XMLEditForm.SynEditFrame.SynEditor.Lines.Delete(0);
   if XMLEditForm.ShowModal=mrOk then
   begin
+    if sgText.ColCount<XMLEditForm.SynEditFrame.SynEditor.Lines.Count+1 then
+      sgText.ColCount:=XMLEditForm.SynEditFrame.SynEditor.Lines.Count+1;
     sgText.Rows[0].Text := Trim('[0] ¹'^M+XMLEditForm.SynEditFrame.SynEditor.Text);
+
     for i := 1 to sgText.ColCount-1 do
     begin
       if (pos('[', sgText.Cells[i,0])=1) and (pos(']', sgText.Cells[i,0])<6) then
@@ -3069,12 +3106,15 @@ end;
 
 procedure TMainForm.sgTextSelectCell(Sender: TObject; ACol, ARow: Integer;
   var CanSelect: Boolean);
+var s:string;
 begin
   if CellEditForm.Visible then
   begin
+    s := sgText.Cells[ACol,0];
+    s := copy(s,pos('[',s)+1,length(s));
+    s :=StringReplace(s,']',':'+ IntToStr(ARow)+']',[]);
     CellEditForm.Text := sgText.Cells[ACol,ARow];
-    CellEditForm.Caption := 'Cell['+IntToStr(ACol)+':'+ IntToStr(ARow)+'] <'
-      + ExtractFileName(edCfgCardsFile.Text) +'>';
+    CellEditForm.Caption :=  'Cell['+s+' <'+ ExtractFileName(edCfgCardsFile.Text) +'> '+CellEditForm.NodeName;
     CellEditForm.Row := Arow;
   end;
   sgText.Invalidate;
@@ -3146,6 +3186,17 @@ begin
 
     edCfgCardsFile.Text := ExtractRelativePath(edCfgRoot.Text, MainData.dlgOpenText.FileName);
     ReadGrid(MainData.dlgOpenText.FileName);
+  end;
+end;
+
+procedure TMainForm.sbPageBlankClick(Sender: TObject);
+begin
+  ChDir(edCfgRoot.text);
+  MainData.dlgOpenPicture.InitialDir := edCfgRoot.Text;
+  MainData.dlgOpenPicture.FileName := edPageBlank.Text;
+  if MainData.dlgOpenPicture.Execute then
+  begin
+    edPageBlank.Text := ExtractRelativePath(edCfgRoot.text, MainData.dlgOpenPicture.FileName);
   end;
 end;
 
@@ -3427,12 +3478,32 @@ begin
 end;
 
 procedure TMainForm.tbCellEditClick(Sender: TObject);
+var s:string;
+  nod:TXML_Nod;
 begin
   CellEditForm.Grid := sgText;
   CellEditForm.PrepareMacro(SVGFrame.SVGNode);
+  CellEditForm.NodeName := '';
+  nod := SVGFrame.SVGNode;
+  repeat
+    if nod<>SVGFrame.SVGNode then
+      CellEditForm.NodeName:='\'+CellEditForm.NodeName;
+
+
+    if (nod.LocalName='svg')or(nod.Attribute['id']='') then
+      CellEditForm.NodeName:='<'+nod.LocalName+'>'+CellEditForm.NodeName
+    else
+      CellEditForm.NodeName:=nod.Attribute['id']+CellEditForm.NodeName;
+    nod := nod.parent;
+    if nod.LocalName='' then Break;
+    
+  until Nod=nil;
+
   CellEditForm.Text := sgText.Cells[sgText.Col,sgText.Row];
-  CellEditForm.Caption := 'Cell['+IntToStr(sgText.Col)+':'+ IntToStr(sgText.Row)+'] <'
-    + ExtractFileName(edCfgCardsFile.Text) +'>';
+  s := sgText.Cells[sgText.Col,0];
+  s := copy(s,pos('[',s)+1,length(s));
+  s :=StringReplace(s,']',':'+ IntToStr(sgText.Row)+']',[]);
+  CellEditForm.Caption :=  'Cell['+s+' <'+ ExtractFileName(edCfgCardsFile.Text) +'> '+CellEditForm.NodeName;
   CellEditForm.aPreview.OnExecute := aShowExecute;
   CellEditForm.Show;
 end;
@@ -3480,6 +3551,8 @@ begin
       if cbDPI.Text='' then cbDPI.Text := '300';
 //      cbEngine.ItemIndex := StrToIntDef(Attribute['Engine'],0);
       lblEncoding.Caption := Attribute['encoding'];
+      if Attribute['wrap']<>'' then
+        CellEditForm.seWrap.Lines.CommaText :=Attribute['wrap'];
 
     end;
     if lblEncoding.Caption = 'UTF8' then
@@ -3734,6 +3807,7 @@ begin
       Attribute['LocalFonts'] := edCfgTTF.Text;
       Attribute['Engine'] :=  IntToStr(cbEngine.ItemIndex);
       Attribute['OutFormat'] :=  IntToStr(cbOutFormat.ItemIndex);
+     Attribute['wrap'] := CellEditForm.seWrap.Lines.CommaText;
 
 
     end;

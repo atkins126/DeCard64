@@ -169,6 +169,11 @@ object SvgTreeFrame: TSvgTreeFrame
       ImageIndex = 2
       OnClick = miImageClick
     end
+    object Pathpathd1: TMenuItem
+      Caption = 'Path <path d="..."/>'
+      ImageIndex = 1
+      OnClick = Pathpathd1Click
+    end
     object miUse: TMenuItem
       Caption = 'Linked object <&use/>'
       ImageIndex = 3
@@ -241,6 +246,11 @@ object SvgTreeFrame: TSvgTreeFrame
         ImageIndex = 11
         OnClick = miTurbulenceClick
       end
+      object Embossing1: TMenuItem
+        Caption = 'Embossing'
+        ImageIndex = 12
+        OnClick = Embossing1Click
+      end
     end
     object N1: TMenuItem
       Caption = '-'
@@ -285,6 +295,23 @@ object SvgTreeFrame: TSvgTreeFrame
         Caption = 'Clear template'
         ImageIndex = 17
         OnClick = Clear1Click
+      end
+      object N3: TMenuItem
+        Caption = '-'
+      end
+      object Export1: TMenuItem
+        Caption = 'Export'
+        ImageIndex = 6
+        object Exportbranch1: TMenuItem
+          Caption = 'Export branch'
+          ImageIndex = 34
+          OnClick = Exportbranch1Click
+        end
+        object Exportheader1: TMenuItem
+          Caption = 'Export header'
+          ImageIndex = 27
+          OnClick = Exportheader1Click
+        end
       end
     end
   end

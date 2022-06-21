@@ -58,6 +58,12 @@ type
     tbXML: TToolButton;
     pnFindRemind: TPanel;
     pnRemindDialog: TPanel;
+    Pathpathd1: TMenuItem;
+    Embossing1: TMenuItem;
+    N3: TMenuItem;
+    Exportbranch1: TMenuItem;
+    Exportheader1: TMenuItem;
+    Export1: TMenuItem;
     procedure treeTemplateCollapsing(Sender: TObject; Node: TTreeNode;
       var AllowCollapse: Boolean);
     procedure tbXMLClick(Sender: TObject);
@@ -93,6 +99,10 @@ type
     procedure miInnerCrssClick(Sender: TObject);
     procedure miPattertClick(Sender: TObject);
     procedure svgFindDialogShow(Sender: TObject);
+    procedure Pathpathd1Click(Sender: TObject);
+    procedure Embossing1Click(Sender: TObject);
+    procedure Exportheader1Click(Sender: TObject);
+    procedure Exportbranch1Click(Sender: TObject);
   private
     { Private declarations }
     FSVG: TXML_Doc;
@@ -129,6 +139,7 @@ uses u_MainData, u_XMLEditForm;
 var
   StoredTag:string;
   StoredCaption:string;
+  ExportHeader:string;
 
 function HexColor(Color:TColor):string;
 var
@@ -301,6 +312,38 @@ begin
   InsertTag('<clipPath/>');
   if @FOnResizeClick<>nil then
     OnResizeClick(Sender);
+end;
+
+procedure TSvgTreeFrame.Embossing1Click(Sender: TObject);
+begin
+  InsertTag('<filter id="fltEmboss"><feGaussianBlur stdDeviation="1.01" result="result0" in="SourceAlpha"/>'
+		+'<feOffset in="result0" result="result3" dx="2" dy="2" stdDeviation="0.40000000000000002"/>'
+		+'<feSpecularLighting lighting-color="rgb(217,217,217)" specularConstant="1.05" result="result1" specularExponent="35" in="result0" surfaceScale="0.75">'
+		+'<fePointLight y="-10000" x="-5000" z="20000"/></feSpecularLighting>'
+		+'<feComposite operator="in" result="result2" in2="SourceAlpha" in="result1"/>'
+		+'<feComposite k3="0.99999999999999989" k2="0.99999999999999989" result="result4" in="SourceGraphic" operator="arithmetic"/>'
+		+'<feMerge><feMergeNode  in="result3"/><feMergeNode  in="result4"/></feMerge></filter>');
+end;
+
+procedure TSvgTreeFrame.Exportbranch1Click(Sender: TObject);
+begin
+  MainData.dlgSaveSVG.FileName := SVGNode.attribute['id']+'.svg';
+  if MainData.dlgSaveSVG.Execute then
+  with TStringList.Create do
+  try
+    text := ExportHeader + SVGNode.xml + '</svg>';
+
+    SaveToFile(MainData.dlgSaveSVG.FileName);
+  finally
+    free;
+  end;
+
+
+end;
+
+procedure TSvgTreeFrame.Exportheader1Click(Sender: TObject);
+begin
+   ExportHeader := InputBox('SVG header', '<SVG>',ExportHeader);
 end;
 
 function TSvgTreeFrame.GetFocusedNode: TTreeNode;
@@ -515,6 +558,13 @@ begin
     OnResizeClick(Sender);
 end;
 
+procedure TSvgTreeFrame.Pathpathd1Click(Sender: TObject);
+begin
+  InsertTag('<path/>');
+  if @FOnResizeClick<>nil then
+    OnResizeClick(Sender);
+end;
+
 procedure TSvgTreeFrame.pmAddTagPopup(Sender: TObject);
 begin
    miPasteTag.Caption := 'Paste: '+StoredCaption;
@@ -683,6 +733,7 @@ end;
 initialization
 
   StoredCaption := '---';
+  ExportHeader := '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">';
 
 
 end.

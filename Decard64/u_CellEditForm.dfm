@@ -18,6 +18,7 @@ object CellEditForm: TCellEditForm
   Position = poMainFormCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnDeactivate = FormDeactivate
   PixelsPerInch = 96
   TextHeight = 13
   object Splitter2: TSplitter
@@ -191,8 +192,8 @@ object CellEditForm: TCellEditForm
       ParentFont = False
     end
     object sbChkRepl: TSpeedButton
-      Left = 308
-      Top = 9
+      Left = 301
+      Top = 8
       Width = 110
       Height = 27
       Action = aChkRepl
@@ -263,6 +264,7 @@ object CellEditForm: TCellEditForm
     inherited SynEditor: TSynEdit
       Width = 492
       Height = 210
+      OnKeyDown = CellEditFrameSynEditorKeyDown
       OnChange = CellEditFrameSynEditorChange
       ExplicitWidth = 492
       ExplicitHeight = 210
@@ -272,9 +274,10 @@ object CellEditForm: TCellEditForm
       ExplicitWidth = 492
       inherited tbrEditor: TToolBar
         inherited ToolButton3: TToolButton
-          Hint = 'Add selected to [Common]'
+          Hint = 'Add to Common (Ctrl+0)'
+          Caption = '+'
           Visible = True
-          OnClick = CellEditFrameToolButton3Click
+          OnClick = aAddCommonExecute
         end
       end
     end
@@ -284,7 +287,7 @@ object CellEditForm: TCellEditForm
     Top = 0
     Width = 289
     Height = 238
-    ActivePage = tsCommon
+    ActivePage = tsMacros
     Align = alRight
     TabOrder = 2
     object tsCommon: TTabSheet
@@ -295,9 +298,14 @@ object CellEditForm: TCellEditForm
         Width = 240
         Height = 210
         Align = alClient
+        DragMode = dmAutomatic
         ItemHeight = 13
         TabOrder = 0
         OnDblClick = lbCommonDblClick
+        OnDragDrop = lbCommonDragDrop
+        OnDragOver = lbCommonDragOver
+        OnKeyDown = lbCommonKeyDown
+        OnMouseDown = lbCommonMouseDown
       end
       object lbCommonIdx: TListBox
         Left = 0
@@ -400,6 +408,55 @@ object CellEditForm: TCellEditForm
         ReadOnly = True
       end
     end
+    object tsWrap: TTabSheet
+      Caption = 'Wrap'
+      ImageIndex = 3
+      object seWrap: TSynEdit
+        Left = 0
+        Top = 0
+        Width = 281
+        Height = 210
+        Align = alClient
+        Color = clWhite
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -13
+        Font.Name = 'Courier New'
+        Font.Style = []
+        Font.Quality = fqClearTypeNatural
+        TabOrder = 0
+        CodeFolding.ShowCollapsedLine = True
+        UseCodeFolding = False
+        Gutter.Font.Charset = DEFAULT_CHARSET
+        Gutter.Font.Color = clWindowText
+        Gutter.Font.Height = -11
+        Gutter.Font.Name = 'Courier New'
+        Gutter.Font.Style = []
+        Gutter.Width = 0
+        Highlighter = CellEditFrame.SynXMLSyn1
+        Lines.Strings = (
+          '<br/>'
+          '<br '
+          '<p/>'
+          '<p ')
+        Options = [eoAutoIndent, eoEnhanceEndKey, eoGroupUndo, eoScrollPastEol, eoShowScrollHint, eoShowSpecialChars, eoSmartTabDelete, eoSmartTabs, eoTabsToSpaces]
+      end
+    end
+  end
+  object cbHelper: TComboBox
+    Left = 184
+    Top = 200
+    Width = 145
+    Height = 21
+    AutoComplete = False
+    TabOrder = 3
+    Text = 'cbHelper'
+    Visible = False
+    OnChange = cbHelperChange
+    OnCloseUp = cbHelperCloseUp
+    OnExit = cbHelperExit
+    OnKeyPress = cbHelperKeyPress
+    OnKeyUp = cbHelperKeyUp
   end
   object alGrid: TActionList
     Images = MainData.ilNavigate
@@ -508,7 +565,18 @@ object CellEditForm: TCellEditForm
       Category = 'Common Ctrl-#'
       Caption = 'Action10'
       ShortCut = 16432
-      OnExecute = CellEditFrameToolButton3Click
+    end
+    object aHelper: TAction
+      Caption = 'Helper'
+      ShortCut = 16416
+      OnExecute = aHelperExecute
+    end
+    object aAddCommon: TAction
+      Caption = '+'
+      Hint = 'Add to Common'
+      ImageIndex = 22
+      ShortCut = 16432
+      OnExecute = aAddCommonExecute
     end
   end
 end

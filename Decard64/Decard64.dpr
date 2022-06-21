@@ -17,7 +17,14 @@ uses
   frmGlyph in 'Frames\frmGlyph.pas' {formGlyph},
   u_CalcSVG in 'src\u_CalcSVG.pas',
   UMatrix in 'src\UMatrix.pas',
-  u_PipeForm in 'u_PipeForm.pas' {PipeForm};
+  u_PipeForm in 'u_PipeForm.pas' {PipeForm},
+  u_PathEdit in 'src\u_PathEdit.pas' {frmPathEdit},
+  u_ForeignObject in 'src\u_ForeignObject.pas',
+  unaClasses in 'regexp\core\unaClasses.pas',
+  unaRE in 'regexp\core\unaRE.pas',
+  unaTypes in 'regexp\core\unaTypes.pas',
+  unaUtils in 'regexp\core\unaUtils.pas',
+  u_TraceReplace in 'u_TraceReplace.pas' {TraceReplForm};
 
 {$R *.res}
 
@@ -30,5 +37,7 @@ begin
   Application.CreateForm(TXMLEditForm, XMLEditForm);
   Application.CreateForm(TformGlyph, formGlyph);
   Application.CreateForm(TPipeForm, PipeForm);
+  Application.CreateForm(TfrmPathEdit, frmPathEdit);
+  Application.CreateForm(TTraceReplForm, TraceReplForm);
   Application.Run;
 end.

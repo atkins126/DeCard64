@@ -79,7 +79,7 @@ implementation
 
 
 uses u_MainData, Vcl.Themes, u_XMLEditForm, u_MainForm, u_ThreadRender,
-  u_Html2SVG , u_PipeForm;
+  u_Html2SVG , u_PipeForm, u_PathEdit;
 
 
 
@@ -145,6 +145,21 @@ begin
 
 
   XMLEditForm.Caption := '<'+SVGNode.LocalName+'>.'+s;
+
+  if sgAttr.Cells[0,sgAttr.Row]='d' then
+  begin
+    frmPathEdit.CardSize := Point(MainForm.seWidth.Value,MainForm.seHeight.Value);
+    frmPathEdit.FrameSize := MainForm.seFrame.Value;
+    frmPathEdit.UndoList.Clear;
+    frmPathEdit.mePATH.Lines.Text :=sgAttr.Cells[sgAttr.Col,sgAttr.Row];
+    frmPathEdit.Caption := XMLEditForm.Caption;
+    if frmPathEdit.ShowModal=mrOk then
+    begin
+      sgAttr.Cells[sgAttr.Col,sgAttr.Row] := StringReplace(frmPathEdit.mePATH.Lines.Text,#13#10,' ',[rfReplaceAll]);
+      sgAttrSetEditText(sgAttr,sgAttr.Col, sgAttr.Row,sgAttr.Cells[sgAttr.Col,sgAttr.Row] );
+    end;
+  end
+  else
   if XMLEditForm.ShowModal=mrOk then
   begin
     if sgAttr.Cells[0,sgAttr.Row]='body' then
@@ -231,6 +246,11 @@ end;
 procedure TSvgInspectorFrame.SetSize(ARect: TRect);
 begin
    if SVGNode.LocalName='svg' then exit;
+
+   if (SVGNode.LocalName='path') and (SVGNode.Attribute['d']='') then
+   begin
+     SVGNode.Attribute['d'] := Format('M %d %d H %d V %d H %d Z', [ARect.Left, ARect.Top, ARect.Right, ARect.Bottom, ARect.Left]);
+   end;
 
    if SVGNode.LocalName='text' then
    begin
@@ -330,6 +350,10 @@ procedure TSvgInspectorFrame.SetSVGNode(const Value: TXML_Nod);
       exit
     else
 
+    if (cbAtrShow.ItemIndex=2) and (Pos('fe',LocalName)=1) then
+    begin
+    end
+    else
     if (cbAtrShow.ItemIndex=0) then
     begin
     end
@@ -354,6 +378,12 @@ procedure TSvgInspectorFrame.SetSVGNode(const Value: TXML_Nod);
     if Aname = 'decard-baseline' then
       en := '80%,100%';
 
+    if (Aname = 'result')or(Aname = 'in')or(Aname = 'in2') then
+    begin
+      en := 'SourceGraphic,SourceAlpha';
+    end;
+
+
     if nod <> nil then
     begin
       for i:=0 to nod.Nodes.Count-1 do
@@ -375,7 +405,10 @@ procedure TSvgInspectorFrame.SetSVGNode(const Value: TXML_Nod);
       en:=UrlList('mask',en)
     else
     if (Aname='filter') then
+    begin
       en:=UrlList('filter',en);
+      en := en + ',blur(3),brightness(100%),contrast(100%),drop-shadow(10 10 1.5 black),grayscale(100%),hue-rotate(30deg),invert(100%),opacity(50%),sepia(100%),saturate(100%)';
+    end;
 
 
 
@@ -767,17 +800,54 @@ end;
 { THackInplaceEditList }
 
 procedure THackInplaceEditList.DoGetPickListItems;
+
+ function FilterList:string;
+ var nd:TXML_Nod;
+   s:string;
+ begin
+   nd := TSvgInspectorFrame(Owner.Owner).SVGNode;
+   result := ',SourceGraphic,SourceAlpha,';
+   while (nd<>nil) and (nd.LocalName<>'filter') do
+     nd:=nd.parent;
+
+   if (nd<>nil) then
+     nd:=nd.next;
+
+   while (nd<>nil)and(pos('fe',nd.LocalName)=1) do
+   begin
+        s := trim(nd.attribute['result']);
+
+        if (s<>'') and (pos(','+s+',' , result)=0) then
+          result := result +s+ ',';
+        s := trim(nd.attribute['in']);
+        if (s<>'') and (pos(','+s+',' , result)=0) then
+          result := result +s+ ',';
+        s := trim(nd.attribute['in2']);
+        if (s<>'') and (pos(','+s+',' , result)=0) then
+          result := result +s+ ',';
+        nd:=nd.next;
+    end;
+    result := StringReplace(result,',',#13,[rfReplaceAll]);
+ end;
+
 begin
   if (TStringGrid(Grid).Col>1) then
   with Grid as TStringGrid do
   begin
+    if (Cells[0, Row]='result')or(Cells[0, Row]='in')or(Cells[0, Row]='in2') then
+      PickList.Items.Text := FilterList
+    else
     if (Cells[0, Row]='font-family') then
       PickList.Items.Text := StringReplace(StringReplace(LocalFonts,',',^M,[rfReplaceAll]),'"','',[rfReplaceAll])
     else
     if (Cells[4,Row]<>'')  then
       PickList.Items.Text := StringReplace(','+Cells[4, Row],',',#13,[rfReplaceAll]);
   end
-
 end;
 
 end.
+
+
+
+
+
